@@ -56,17 +56,17 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-purple-400 transition-colors flex items-center gap-2">
+                <Link href="/terms" className="hover:text-purple-400 transition-colors flex items-center gap-2">
                   <FileText className="w-4 h-4" /> Conditions d'utilisation
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-purple-400 transition-colors flex items-center gap-2">
+                <Link href="/privacy" className="hover:text-purple-400 transition-colors flex items-center gap-2">
                   <Shield className="w-4 h-4" /> Politique de confidentialité
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-purple-400 transition-colors flex items-center gap-2">
+                <Link href="/about" className="hover:text-purple-400 transition-colors flex items-center gap-2">
                   <Info className="w-4 h-4" /> À propos
                 </Link>
               </li>

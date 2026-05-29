@@ -5,7 +5,7 @@ import Redis from 'ioredis';
 import { z } from 'zod';
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod';
 import { getDb, extractions, posts, settings } from '@telechargeur/database';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import * as jose from 'jose';
 
@@ -206,8 +206,55 @@ app.post(
   }
 );
 
+const bootstrapDb = async () => {
+  app.log.info('Bootstrapping database schema...');
+  try {
+    // 1. Create settings table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS settings (
+        key VARCHAR(255) PRIMARY KEY,
+        value VARCHAR NOT NULL,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+      );
+    `);
+    
+    // 2. Create posts table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS posts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) NOT NULL UNIQUE,
+        content VARCHAR NOT NULL,
+        meta_description VARCHAR(500),
+        is_published VARCHAR(10) DEFAULT 'true',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+      );
+    `);
+
+    // 3. Create extractions table
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS extractions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        url VARCHAR(2048) NOT NULL,
+        platform VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pending' NOT NULL,
+        result JSONB,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+      );
+    `);
+    
+    app.log.info('Database schema bootstrapped successfully.');
+  } catch (err) {
+    app.log.error('Failed to bootstrap database:', err);
+  }
+};
+
 const start = async () => {
   try {
+    // Run DB bootstrap automatically
+    await bootstrapDb();
+
     const port = parseInt(process.env.PORT || '3001', 10);
     await app.listen({ port, host: '0.0.0.0' });
     console.log(`API running on port ${port}`);
