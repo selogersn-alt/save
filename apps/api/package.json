@@ -15,11 +15,14 @@
     "zod": "^3.23.8",
     "fastify-type-provider-zod": "^1.1.9",
     "drizzle-orm": "^0.30.10",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.2.4",
     "@telechargeur/database": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.4.5",
     "tsx": "^4.10.5",
-    "@types/node": "^20.12.12"
+    "@types/node": "^20.12.12",
+    "@types/bcryptjs": "^2.4.6"
   }
 }

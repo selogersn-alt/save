@@ -38,7 +38,10 @@ export default function DownloaderForm({ platform = "all" }: DownloaderFormProps
         body: JSON.stringify({ url, action })
       });
       
-      if (!res.ok) throw new Error("Erreur lors de la communication avec l'API.");
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Erreur API (${res.status}): ${errorText}`);
+      }
       const data = await res.json();
       
       // Redirect to the dedicated download page

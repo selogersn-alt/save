@@ -63,7 +63,8 @@ services:
     ports:
       - "13000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:13001
+      - API_URL=http://api:3001
+      - NEXT_PUBLIC_API_URL=https://save.digitalh.net
     depends_on:
       - api
     restart: always
