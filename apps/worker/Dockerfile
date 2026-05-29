@@ -1,7 +1,10 @@
 FROM node:22-slim AS base
 
-# Installer ffmpeg et python3 pour yt-dlp (Debian au lieu de Alpine pour éviter les bugs DNS Windows)
-RUN apt-get update && apt-get install -y ffmpeg python3 python3-pip && rm -rf /var/lib/apt/lists/*
+# Installer ffmpeg, python3 et le dernier binaire officiel yt-dlp depuis GitHub
+RUN apt-get update && apt-get install -y ffmpeg python3 curl && \
+    curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && \
+    chmod a+rx /usr/local/bin/yt-dlp && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"

@@ -1,10 +1,12 @@
 import { Worker, Job } from 'bullmq';
 import Redis from 'ioredis';
-import youtubedl from 'youtube-dl-exec';
+import { create } from 'youtube-dl-exec';
 import { getDb, extractions, settings } from '@telechargeur/database';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 import fs from 'fs';
+
+const youtubedl = create('/usr/local/bin/yt-dlp');
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
