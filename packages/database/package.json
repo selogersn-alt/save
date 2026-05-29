@@ -1,7 +1,8 @@
 {
   "name": "@telechargeur/database",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "dependencies": {
     "drizzle-orm": "^0.30.10",
     "postgres": "^3.4.4"
@@ -11,6 +12,7 @@
     "typescript": "^5.4.5"
   },
   "scripts": {
+    "build": "tsc",
     "push": "drizzle-kit push:pg"
   }
 }

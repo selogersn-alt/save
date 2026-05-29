@@ -12,6 +12,9 @@ COPY packages/database/package.json ./packages/database/
 RUN pnpm install
 
 COPY . .
+WORKDIR /app/packages/database
+RUN pnpm build
+
 WORKDIR /app/apps/api
 RUN pnpm build
 
