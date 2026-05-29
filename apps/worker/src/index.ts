@@ -66,12 +66,31 @@ const worker = new Worker(
       try {
         const settingsRecords = await db.select().from(settings);
         const settingsMap = settingsRecords.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
-        const instaCookies = settingsMap.instagram_cookies;
-
-        if (instaCookies && instaCookies.trim().length > 0) {
-          // Utilisation d'un fichier temporaire unique dans le dossier local du conteneur
-          cookiesPath = `/tmp/insta_cookies_${job.id}.txt`;
-          await fs.promises.writeFile(cookiesPath, instaCookies, 'utf-8');
+        let cookiesStr = settingsMap.instagram_cookies || '';
+        if (cookiesStr && cookiesStr.trim() !== '') {
+          cookiesPath = path.join(os.tmpdir(), `insta_cookies_${job.id}.txt`);
+          
+          if (!cookiesStr.includes('# Netscape HTTP Cookie File')) {
+             console.log(`[JOB ${job.id}] Conversion des cookies bruts en format Netscape...`);
+             const parts = cookiesStr.split(';');
+             let netscapeContent = "# Netscape HTTP Cookie File\n# https://curl.haxx.se/rfc/cookie_spec.html\n# This is a generated file!  Do not edit.\n\n";
+             const expiry = Math.floor(Date.now() / 1000) + 31536000; // 1 year expiry
+             
+             for (const part of parts) {
+                const eqIndex = part.indexOf('=');
+                if (eqIndex > -1) {
+                   const key = part.substring(0, eqIndex).trim();
+                   const value = part.substring(eqIndex + 1).trim();
+                   if (key && value) {
+                      netscapeContent += `.instagram.com\tTRUE\t/\tTRUE\t${expiry}\t${key}\t${value}\n`;
+                   }
+                }
+             }
+             fs.writeFileSync(cookiesPath, netscapeContent);
+          } else {
+             fs.writeFileSync(cookiesPath, cookiesStr);
+          }
+          
           console.log(`[JOB ${job.id}] Fichier cookies d'authentification généré avec succès.`);
         }
       } catch (cookieErr) {
