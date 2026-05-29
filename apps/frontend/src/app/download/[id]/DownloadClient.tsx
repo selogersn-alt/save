@@ -491,7 +491,8 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                               <div className="flex items-center gap-2 mt-3">
                                 <a 
                                   href={`/api/download-proxy?url=${encodeURIComponent(video.url)}&filename=${encodeURIComponent(result?.title || 'video')}-${index + 1}.${video.ext}`}
-                                  download
+                                  target="_blank"
+                                  rel="noreferrer"
                                   className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-purple-650 to-indigo-650 hover:from-purple-550 hover:to-indigo-550 text-white font-bold text-xs rounded-xl transition-all shadow-md active:scale-95"
                                 >
                                   <Download className="w-3.5 h-3.5" />
@@ -556,7 +557,8 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                             <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
                               <a 
                                 href={`/api/download-proxy?url=${encodeURIComponent(imgUrl)}&filename=${encodeURIComponent(result?.title || 'image')}-${index + 1}.jpg`}
-                                download
+                                target="_blank"
+                                rel="noreferrer"
                                 className="flex-1 py-4 bg-gradient-to-r from-purple-600 to-indigo-650 hover:from-purple-500 hover:to-indigo-550 text-white font-extrabold text-sm rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-purple-950/40 hover:shadow-purple-500/20 active:scale-[0.98]"
                               >
                                 <Download className="w-5 h-5" />
@@ -582,7 +584,8 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                   {hdFormat && !imageUrls.length && !carouselVideos.length && (
                     <div className="flex flex-col sm:flex-row gap-3 w-full">
                       <a href={`/api/download-proxy?url=${encodeURIComponent(hdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video')}.${hdFormat.ext || 'mp4'}`} 
-                         download
+                         target="_blank"
+                         rel="noreferrer"
                          className="flex-grow group relative flex items-center justify-between p-4 bg-gradient-to-r from-purple-650 to-indigo-650 hover:from-purple-550 hover:to-indigo-550 rounded-2xl transition-all shadow-lg active:scale-[0.98]">
                         <div className="flex items-center gap-4">
                           <div className="bg-white/20 p-3 rounded-xl"><Download className="w-6 h-6 text-white" /></div>
