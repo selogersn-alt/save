@@ -178,6 +178,20 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     document.body.removeChild(link);
   };
 
+  const downloadAllImages = () => {
+    imageUrls.forEach((imgUrl, index) => {
+      setTimeout(() => {
+        const link = document.createElement("a");
+        const filename = `${result?.title || 'image'}-${index + 1}.jpg`;
+        link.href = `/api/download-proxy?url=${encodeURIComponent(imgUrl)}&filename=${encodeURIComponent(filename)}`;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, index * 400);
+    });
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 relative z-10 pt-24 px-4 pb-20">
       
@@ -361,26 +375,53 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
 
                   {/* Images Download Gallery (TikTok Slides or Instagram Carousels) */}
                   {imageUrls.length > 0 && (
-                    <div className="space-y-4 pt-2 w-full">
-                      <h3 className="text-xl font-bold text-white mb-2">Télécharger les Images HD</h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div className="space-y-8 pt-4 w-full">
+                      {/* Top Header Card */}
+                      <div className="glass-card p-6 rounded-3xl border border-slate-800/80 bg-slate-950/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                        <div className="text-left">
+                          <h3 className="text-2xl font-extrabold text-white">Images HD Disponibles</h3>
+                          <p className="text-slate-400 text-sm mt-1">Nous avons extrait {imageUrls.length} image{imageUrls.length > 1 ? 's' : ''} en haute définition.</p>
+                        </div>
+                        {imageUrls.length > 1 && (
+                          <button 
+                            onClick={downloadAllImages}
+                            className="inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm rounded-2xl transition-all shadow-xl shadow-emerald-950/50 hover:shadow-emerald-500/25 active:scale-95 shrink-0"
+                          >
+                            <Download className="w-5 h-5 animate-pulse" />
+                            Télécharger TOUTES les images en 1 Clic
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Flux Vertical Instagram Premium - Images non coupées avec bouton en-dessous */}
+                      <div className="max-w-2xl mx-auto flex flex-col gap-10 w-full">
                         {imageUrls.map((imgUrl, index) => (
-                          <div key={index} className="relative group rounded-2xl overflow-hidden border border-slate-850 bg-slate-900/50 aspect-square flex flex-col justify-between p-3">
-                            <img src={imgUrl} alt={`Slide ${index + 1}`} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-60" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+                          <div key={index} className="glass-card p-6 rounded-3xl border border-slate-800/80 bg-slate-900/35 hover:bg-slate-900/50 transition-all flex flex-col gap-6 w-full shadow-xl">
+                            {/* Image Container with Original Aspect Ratio */}
+                            <div className="relative rounded-2xl overflow-hidden border border-slate-850/60 bg-slate-950/60 flex items-center justify-center w-full">
+                              <img 
+                                src={imgUrl} 
+                                alt={`Image ${index + 1}`} 
+                                className="w-full h-auto object-contain max-h-[800px] rounded-2xl shadow-inner transition-transform duration-500 hover:scale-[1.01]" 
+                                loading="lazy"
+                              />
+                              
+                              <span className="absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-bold text-white border border-slate-800/50">
+                                Image {index + 1} / {imageUrls.length}
+                              </span>
+                            </div>
                             
-                            <span className="z-10 bg-slate-950/70 backdrop-blur-md px-2 py-0.5 rounded-lg text-xs font-semibold text-white w-max">
-                              Image {index + 1}
-                            </span>
-                            
-                            <a 
-                              href={`/api/download-proxy?url=${encodeURIComponent(imgUrl)}&filename=${encodeURIComponent(result?.title || 'image')}-${index + 1}.jpg`}
-                              download
-                              className="z-10 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-purple-500/20 active:scale-95"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              Télécharger
-                            </a>
+                            {/* Download Button Centered Below the Image */}
+                            <div className="flex flex-col items-center w-full">
+                              <a 
+                                href={`/api/download-proxy?url=${encodeURIComponent(imgUrl)}&filename=${encodeURIComponent(result?.title || 'image')}-${index + 1}.jpg`}
+                                download
+                                className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-sm rounded-2xl flex items-center justify-center gap-3.5 transition-all shadow-lg shadow-purple-950/40 hover:shadow-purple-500/20 active:scale-[0.98]"
+                              >
+                                <Download className="w-5 h-5" />
+                                Télécharger l'Image {index + 1} en HD
+                              </a>
+                            </div>
                           </div>
                         ))}
                       </div>

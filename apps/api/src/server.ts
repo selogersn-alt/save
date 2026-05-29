@@ -9,6 +9,9 @@ import { getDb, extractions, posts, settings } from '@telechargeur/database';
 import { eq, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import * as jose from 'jose';
+import https from 'https';
+import http from 'http';
+import { parse as parseUrl } from 'url';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-admin-panel');
 
@@ -163,6 +166,7 @@ app.get(
     // Empêcher le navigateur de transmettre le referer de notre site lors d'une redirection,
     // ce qui évite les blocages "Access Denied" (403) par des CDN comme Akamai (TikTok, etc.)
     reply.header('Referrer-Policy', 'no-referrer');
+    
     try {
       request.log.info(`Proxying download from: ${url}`);
       
@@ -191,32 +195,72 @@ app.get(
         headers['Referer'] = referer;
       }
 
-      const res = await fetch(url, { headers });
-      
-      if (!res.ok) {
-        request.log.warn(`CDN fetch failed with status ${res.status}. Falling back to direct redirect to CDN.`);
-        // STRATÉGIE DE REPLI DIRECTE : Si le proxy échoue, on redirige l'utilisateur vers le CDN d'origine au lieu de télécharger un fichier JSON corrompu !
-        return reply.redirect(url);
-      }
-
-      const contentType = res.headers.get('content-type') || 'application/octet-stream';
       const finalFilename = filename || `media-${Date.now()}`;
-
-      reply.header('Content-Type', contentType);
       reply.header('Content-Disposition', `attachment; filename="${encodeURIComponent(finalFilename)}"`);
-      
-      // Node 22 native fetch returns a Web ReadableStream.
-      // Drizzle/Fastify expects a Node Readable stream, which we convert here.
-      if (res.body) {
-        const nodeStream = Readable.fromWeb(res.body as any);
-        return reply.send(nodeStream);
-      } else {
-        request.log.warn('Response body is empty. Redirecting to direct CDN URL.');
-        return reply.redirect(url);
-      }
+
+      // Fonction récursive interne pour gérer les redirections et streamer le flux sans buffering
+      const executeProxy = (targetUrl: string): Promise<void> => {
+        return new Promise((resolve, reject) => {
+          const parsed = parseUrl(targetUrl);
+          const protocol = parsed.protocol === 'https:' ? https : http;
+          
+          const options = {
+            hostname: parsed.hostname,
+            port: parsed.port ? parseInt(parsed.port, 10) : undefined,
+            path: parsed.path,
+            method: 'GET',
+            headers: headers,
+            rejectUnauthorized: false
+          };
+
+          const req = protocol.request(options, (res) => {
+            // Gérer les redirections HTTP (301, 302, 307, 308)
+            if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+              const redirectUrl = res.headers.location;
+              request.log.info(`Redirecting proxy to: ${redirectUrl}`);
+              resolve(executeProxy(redirectUrl));
+              return;
+            }
+
+            if (res.statusCode && res.statusCode >= 400) {
+              reject(new Error(`Target CDN responded with status ${res.statusCode}`));
+              return;
+            }
+
+            // Copier les en-têtes essentiels du flux d'origine
+            const contentType = res.headers['content-type'] || 'application/octet-stream';
+            reply.header('Content-Type', contentType);
+            
+            if (res.headers['content-length']) {
+              reply.header('Content-Length', res.headers['content-length']);
+            }
+            if (res.headers['accept-ranges']) {
+              reply.header('Accept-Ranges', res.headers['accept-ranges']);
+            }
+
+            // Piper le flux de données directement sur le socket brut du client Fastify
+            res.pipe(reply.raw);
+
+            res.on('end', () => {
+              resolve();
+            });
+
+            res.on('error', (err) => {
+              reject(err);
+            });
+          });
+
+          req.on('error', (err) => {
+            reject(err);
+          });
+
+          req.end();
+        });
+      };
+
+      await executeProxy(url);
     } catch (err: any) {
-      request.log.error(err, 'Proxy download failed. Redirecting to direct CDN URL.');
-      // STRATÉGIE DE REPLI DIRECTE : En cas d'erreur serveur, on redirige l'utilisateur vers le CDN d'origine au lieu de télécharger un fichier JSON corrompu !
+      request.log.error(err, 'Proxy download failed. Redirecting as fallback.');
       try {
         return reply.redirect(url);
       } catch {

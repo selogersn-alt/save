@@ -97,11 +97,13 @@ const worker = new Worker(
           format_id: f.format_id,
           ext: f.ext,
           resolution: f.resolution,
-          filesize: f.filesize,
-          vcodec: f.vcodec,
-          acodec: f.acodec,
+          height: f.height || null,
+          width: f.width || null,
+          filesize: f.filesize || null,
+          vcodec: f.vcodec || 'none',
+          acodec: f.acodec || 'none',
           url: f.url
-        })).slice(0, 10);
+        })).slice(0, 40);
       }
 
       if (output.entries && Array.isArray(output.entries)) {
