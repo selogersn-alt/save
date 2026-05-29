@@ -44,6 +44,7 @@ export const metadata: Metadata = {
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import AdManager from "@/components/AdManager";
+import Script from "next/script";
 
 export default function RootLayout({
   children,
@@ -53,6 +54,11 @@ export default function RootLayout({
   return (
     <html lang="fr" className="dark">
       <body className={`${inter.className} min-h-screen bg-slate-950 text-slate-50 selection:bg-purple-500/30 flex flex-col pt-16`}>
+        {/* Script publicitaire principal du réseau CPM (Monétisation pop-under / interstitiels) */}
+        <Script 
+          src="https://pl29583544.effectivecpmnetwork.com/19/ae/64/19ae6409d1812af8bbb2f146d89d9db8.js" 
+          strategy="afterInteractive" 
+        />
         <AdManager />
         <Navbar />
         <main className="flex-grow">

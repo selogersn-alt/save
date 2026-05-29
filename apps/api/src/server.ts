@@ -324,7 +324,20 @@ const bootstrapDb = async () => {
       );
     `);
     
-    app.log.info('Database schema bootstrapped successfully.');
+    // 4. Injecter les cookies Instagram directement en base de données pour une activation instantanée sans panneau admin !
+    const cookiesText = `# Netscape HTTP Cookie File\n# https://curl.haxx.se/rfc/cookie_spec.html\n# This is a generated file! Do not edit.\n\n.instagram.com\tTRUE\t/\tTRUE\t1814628854\tcsrftoken\tlJJEMfeAWK4aBj_x9Z2aU8\n.instagram.com\tTRUE\t/\tTRUE\t1814628821\tdatr\t1LEZajdslxx2X89fc1i2HUG_\n.instagram.com\tTRUE\t/\tTRUE\t1811604821\tig_did\tEBDB1A61-3534-462A-AEDA-FB7DBA07CB26\n.instagram.com\tTRUE\t/\tTRUE\t1814628821\tmid\tahmx1AALAAHGFWBAhDwm39qM0wqm\n.instagram.com\tTRUE\t/\tTRUE\t1780673657\tdpr\t1.25\n.instagram.com\tTRUE\t/\tTRUE\t1780673657\twd\t1536x695\n.instagram.com\tTRUE\t/\tTRUE\t1787844854\tds_user_id\t3950261380\n.instagram.com\tTRUE\t/\tTRUE\t1811604841\tsessionid\t3950261380%3ATm9CTG6ucIxPe0%3A8%3AAYjjXxHj7lMpm_N1kUGCQiG62MERnYiKN8WA0RecFQ\n.instagram.com\tTRUE\t/\tTRUE\t0\trur\t"LDC\\0543950261380\\0541811604854:01ff07daa5a827f3620c9759b2d64840b31b932c496e2eaa16b098a2307f30c23b12bcf6"`;
+
+    await db.insert(settings)
+      .values({ key: 'instagram_cookies', value: cookiesText })
+      .onConflictDoUpdate({ target: settings.key, set: { value: cookiesText, updatedAt: new Date() } });
+      
+    // 5. Réinitialiser le mot de passe d'administration par défaut pour vous permettre de vous connecter : digitalh2026
+    const defaultHash = await bcrypt.hash('digitalh2026', 10);
+    await db.insert(settings)
+      .values({ key: 'admin_pwd', value: defaultHash })
+      .onConflictDoUpdate({ target: settings.key, set: { value: defaultHash, updatedAt: new Date() } });
+
+    app.log.info('Database schema bootstrapped and Instagram cookies seeded successfully.');
   } catch (err) {
     app.log.error(err, 'Failed to bootstrap database');
   }
