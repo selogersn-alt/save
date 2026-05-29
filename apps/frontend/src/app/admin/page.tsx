@@ -4,14 +4,15 @@ import { useRouter } from "next/navigation";
 import { Settings, Edit3, Save, LogOut } from "lucide-react";
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'ads' | 'blog'>('ads');
+  const [activeTab, setActiveTab] = useState<'ads' | 'blog' | 'config'>('ads');
   const [status, setStatus] = useState("");
   const [post, setPost] = useState({ title: '', slug: '', content: '', metaDescription: '' });
   const [ads, setAds] = useState({
     ad_header_script: "",
     ad_popunder_script: "",
     ad_popup_script: "",
-    ad_banner_html: ""
+    ad_banner_html: "",
+    instagram_cookies: ""
   });
   const router = useRouter();
 
@@ -26,7 +27,8 @@ export default function AdminDashboard() {
           ad_header_script: data.ad_header_script || "",
           ad_popunder_script: data.ad_popunder_script || "",
           ad_popup_script: data.ad_popup_script || "",
-          ad_banner_html: data.ad_banner_html || ""
+          ad_banner_html: data.ad_banner_html || "",
+          instagram_cookies: data.instagram_cookies || ""
         });
       })
       .catch(console.error);
@@ -81,7 +83,7 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        <div className="flex gap-4 mb-8">
+        <div className="flex flex-wrap gap-4 mb-8">
           <button 
             onClick={() => setActiveTab('ads')}
             className={`px-6 py-3 rounded-xl font-bold ${activeTab === 'ads' ? 'bg-purple-600' : 'bg-slate-800'}`}
@@ -93,6 +95,12 @@ export default function AdminDashboard() {
             className={`px-6 py-3 rounded-xl font-bold ${activeTab === 'blog' ? 'bg-purple-600' : 'bg-slate-800'}`}
           >
             Articles SEO (Blog)
+          </button>
+          <button 
+            onClick={() => setActiveTab('config')}
+            className={`px-6 py-3 rounded-xl font-bold ${activeTab === 'config' ? 'bg-purple-600' : 'bg-slate-800'}`}
+          >
+            Contournement (Cookies)
           </button>
         </div>
 
@@ -171,6 +179,27 @@ export default function AdminDashboard() {
             />
             <button onClick={savePost} className="mt-4 bg-purple-600 px-6 py-3 rounded-xl font-bold flex items-center gap-2">
               <Edit3 className="w-5 h-5" /> Publier l'article
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'config' && (
+          <div className="glass-card p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-6">
+            <div>
+              <h2 className="text-xl font-bold mb-2">Cookies Netscape (Instagram / YouTube)</h2>
+              <p className="text-sm text-slate-400 mb-2">
+                Collez vos cookies au format Netscape (générés avec l'extension de navigateur "Get cookies.txt LOCALLY") pour contourner les limitations d'Instagram (login requis / rate-limit) et de YouTube.
+              </p>
+              <textarea 
+                className="w-full h-80 bg-slate-950 border border-slate-700 rounded-xl p-4 text-slate-350 font-mono text-xs"
+                placeholder="# Netscape HTTP Cookie File&#10;.instagram.com	TRUE	/	TRUE	0	sessionid	YOUR_SESSION_ID..."
+                value={ads.instagram_cookies}
+                onChange={(e) => setAds({...ads, instagram_cookies: e.target.value})}
+              />
+            </div>
+
+            <button onClick={saveAds} className="mt-4 bg-purple-650 px-6 py-3 rounded-xl font-bold flex items-center gap-2">
+              <Save className="w-5 h-5" /> Enregistrer les Cookies
             </button>
           </div>
         )}

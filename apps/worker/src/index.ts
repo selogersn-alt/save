@@ -1,9 +1,10 @@
 import { Worker, Job } from 'bullmq';
 import Redis from 'ioredis';
 import youtubedl from 'youtube-dl-exec';
-import { getDb, extractions } from '@telechargeur/database';
+import { getDb, extractions, settings } from '@telechargeur/database';
 import { eq } from 'drizzle-orm';
 import OpenAI from 'openai';
+import fs from 'fs';
 
 const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
@@ -14,7 +15,7 @@ const db = getDb(process.env.DATABASE_URL || 'postgresql://postgres:password@loc
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 // Options spécifiques pour maximiser la qualité et contourner les blocages
-const getExtractorOptions = (url: string, action: string) => {
+const getExtractorOptions = (url: string, action: string, cookiesPath?: string) => {
   const baseOptions: any = {
     dumpJson: true,
     noCheckCertificates: true,
@@ -24,6 +25,10 @@ const getExtractorOptions = (url: string, action: string) => {
       'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     ],
   };
+
+  if (cookiesPath) {
+    baseOptions.cookiefile = cookiesPath;
+  }
 
   if (url.includes('tiktok.com')) {
     baseOptions.extractorArgs = 'tiktok:api_hostname=api16-normal-c-useast1a.tiktokv.com';
@@ -48,10 +53,27 @@ const worker = new Worker(
     const { id, url, action } = job.data;
     console.log(`[JOB ${job.id}] Démarrage extraction URL: ${url} (Action: ${action})`);
     
+    let cookiesPath: string | undefined = undefined;
     try {
       await db.update(extractions).set({ status: 'processing', updatedAt: new Date() }).where(eq(extractions.id, id));
 
-      const options = getExtractorOptions(url, action);
+      // Récupération des cookies Netscape s'ils sont enregistrés dans l'administration
+      try {
+        const settingsRecords = await db.select().from(settings);
+        const settingsMap = settingsRecords.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
+        const instaCookies = settingsMap.instagram_cookies;
+
+        if (instaCookies && instaCookies.trim().length > 0) {
+          // Utilisation d'un fichier temporaire unique dans le dossier local du conteneur
+          cookiesPath = `/tmp/insta_cookies_${job.id}.txt`;
+          await fs.promises.writeFile(cookiesPath, instaCookies, 'utf-8');
+          console.log(`[JOB ${job.id}] Fichier cookies d'authentification généré avec succès.`);
+        }
+      } catch (cookieErr) {
+        console.warn(`[JOB ${job.id}] Impossible de récupérer ou d'écrire les cookies:`, cookieErr);
+      }
+
+      const options = getExtractorOptions(url, action, cookiesPath);
       console.log(`[JOB ${job.id}] Requête youtube-dl-exec...`);
       const output: any = await youtubedl(url, options);
 
@@ -65,7 +87,9 @@ const worker = new Worker(
       };
 
       if (action !== 'summary') {
-        videoData.formats = output.formats?.filter((f: any) => f.url && f.protocol === 'https').map((f: any) => ({
+        // Changement critique : on autorise f.protocol === 'http' et f.protocol === 'https' car beaucoup de CDNs (comme TikTok)
+        // renvoient des liens http natifs qui se faisaient filtrer et supprimer !
+        videoData.formats = output.formats?.filter((f: any) => f.url && (f.protocol === 'https' || f.protocol === 'http' || !f.protocol)).map((f: any) => ({
           format_id: f.format_id,
           ext: f.ext,
           resolution: f.resolution,
@@ -145,6 +169,15 @@ const worker = new Worker(
         updatedAt: new Date()
       }).where(eq(extractions.id, id));
       throw error;
+    } finally {
+      if (cookiesPath) {
+        try {
+          await fs.promises.unlink(cookiesPath);
+          console.log(`[JOB ${job.id}] Fichier temporaire cookies supprimé.`);
+        } catch (err) {
+          console.warn(`[JOB ${job.id}] Impossible de supprimer le fichier temporaire cookies:`, err);
+        }
+      }
     }
   },
   { connection: redisConnection as any, concurrency: 5 }
