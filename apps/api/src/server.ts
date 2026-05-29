@@ -246,7 +246,7 @@ const bootstrapDb = async () => {
     
     app.log.info('Database schema bootstrapped successfully.');
   } catch (err) {
-    app.log.error('Failed to bootstrap database:', err);
+    app.log.error(err, 'Failed to bootstrap database');
   }
 };
 
