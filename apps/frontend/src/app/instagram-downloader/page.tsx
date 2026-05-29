@@ -1,5 +1,5 @@
 import DownloaderForm from "@/components/DownloaderForm";
-import { Sparkles } from "lucide-react";
+import { Sparkles, CheckCircle } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
