@@ -170,11 +170,12 @@ app.get(
     try {
       request.log.info(`Proxying download from: ${url}`);
       
-      let userAgent = (request.headers['user-agent'] as string) || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+      // On force TOUJOURS un User-Agent générique pour correspondre à celui utilisé par yt-dlp lors de l'extraction.
+      // Cela évite les erreurs 403 Forbidden sur YouTube (googlevideo.com) et TikTok.
+      const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
       
       if (lowerUrl.includes('tiktok') || lowerUrl.includes('byteoversea') || lowerUrl.includes('ibyteimg')) {
         referer = 'https://www.tiktok.com/';
-        userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
       } else if (lowerUrl.includes('instagram') || lowerUrl.includes('cdninstagram')) {
         referer = 'https://www.instagram.com/';
       } else if (lowerUrl.includes('youtube') || lowerUrl.includes('youtu.be') || lowerUrl.includes('googlevideo')) {
