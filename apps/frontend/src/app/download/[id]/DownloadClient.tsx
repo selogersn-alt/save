@@ -83,6 +83,65 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     }
   }
 
+  const isAccountOrPlaylist = result && result.entries && Array.isArray(result.entries) && result.entries.length > 0;
+
+  const downloadCSV = () => {
+    if (!result || !result.entries) return;
+    
+    const headers = [
+      "ID",
+      "Titre/Description",
+      "Lien Publication",
+      "Description Complete",
+      "Nombre de Vues",
+      "Nombre de Likes",
+      "Nombre de Commentaires",
+      "Duree",
+      "Auteur/Compte",
+      "Date de publication",
+      "URL Miniature"
+    ];
+    
+    const csvRows = [
+      headers.join(","),
+      ...result.entries.map((entry: any) => {
+        const row = [
+          entry.id || "",
+          entry.title || entry.description || "",
+          entry.url || "",
+          entry.description || "",
+          entry.view_count || 0,
+          entry.like_count || 0,
+          entry.comment_count || 0,
+          entry.duration || "",
+          entry.uploader || result.title || "",
+          entry.upload_date || "",
+          entry.thumbnail || ""
+        ];
+        
+        // Échapper les guillemets et virgules pour un CSV valide
+        return row.map(val => {
+          const str = String(val).replace(/"/g, '""');
+          return `"${str}"`;
+        }).join(",");
+      })
+    ];
+    
+    const csvContent = "\uFEFF" + csvRows.join("\n"); // Encodage UTF-8 BOM pour Excel
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    
+    const cleanTitle = (result.title || "export").toLowerCase().replace(/[^a-z0-9]/g, "_");
+    link.download = `donnees_compte_${cleanTitle}.csv`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 relative z-10 pt-24 px-4 pb-20">
       
@@ -133,86 +192,186 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
             <div className="flex-1 space-y-6 w-full">
               <div>
                 <h1 className="text-3xl font-extrabold line-clamp-2 text-white mb-2">{result?.title || "Média Prêt !"}</h1>
-                <p className="text-slate-400 font-medium">Source: <span className="capitalize">{result?.extractor}</span> {result?.duration_string ? `• Durée: ${result.duration_string}` : ""}</p>
+                <p className="text-slate-400 font-medium">
+                  {isAccountOrPlaylist ? (
+                    <>Type: <span className="text-purple-400 font-semibold">Données de Compte / Playlist</span> • </>
+                  ) : null}
+                  Source: <span className="capitalize">{result?.extractor || "Inconnue"}</span> {result?.duration_string ? `• Durée: ${result.duration_string}` : ""}
+                </p>
               </div>
               
-              <div className="space-y-4 pt-4">
-                {/* Images Download Gallery (TikTok Slides or Instagram Carousels) */}
-                {imageUrls.length > 0 && (
-                  <div className="space-y-4 pt-2">
-                    <h3 className="text-xl font-bold text-white mb-2">Télécharger les Images HD</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {imageUrls.map((imgUrl, index) => (
-                        <div key={index} className="relative group rounded-2xl overflow-hidden border border-slate-850 bg-slate-900/50 aspect-square flex flex-col justify-between p-3">
-                          <img src={imgUrl} alt={`Slide ${index + 1}`} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-60" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
-                          
-                          <span className="z-10 bg-slate-950/70 backdrop-blur-md px-2 py-0.5 rounded-lg text-xs font-semibold text-white w-max">
-                            Image {index + 1}
-                          </span>
-                          
-                          <a 
-                            href={`/api/download-proxy?url=${encodeURIComponent(imgUrl)}&filename=${encodeURIComponent(result?.title || 'image')}-${index + 1}.jpg`}
-                            download
-                            className="z-10 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-purple-500/20 active:scale-95"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            Télécharger
-                          </a>
-                        </div>
-                      ))}
+              {isAccountOrPlaylist ? (
+                /* --- VUE SCRAPER & EXPORT CSV COMPTE --- */
+                <div className="space-y-6 pt-4 w-full">
+                  <div className="bg-slate-900/40 border border-slate-800/80 p-6 rounded-2xl space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                      <span className="font-semibold text-white">Analyse du compte terminée !</span>
+                    </div>
+                    <p className="text-sm text-slate-300">
+                      Nous avons extrait avec succès les publications et les statistiques de ce compte. Téléchargez le tableau complet au format CSV pour l'ouvrir dans Excel ou Google Sheets.
+                    </p>
+                    <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
+                      <div>Publications trouvées : <strong className="text-white">{result.entries.length}</strong></div>
+                      <div>Propriétaire : <strong className="text-white">{result.entries[0]?.uploader || result.title || "Inconnu"}</strong></div>
                     </div>
                   </div>
-                )}
 
-                {/* Bouton HD (Only if not purely an image post) */}
-                {hdFormat && !imageUrls.length && (
-                  <a href={`/api/download-proxy?url=${encodeURIComponent(hdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video')}.${hdFormat.ext || 'mp4'}`} 
-                     download
-                     className="w-full group relative flex items-center justify-between p-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl transition-all shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-white/20 p-3 rounded-xl"><Download className="w-6 h-6 text-white" /></div>
-                      <div className="text-left">
-                        <div className="font-bold text-white text-lg">Télécharger Vidéo HD</div>
-                        <div className="text-white/70 text-sm">Qualité Maximale ({hdFormat.ext})</div>
+                  <button 
+                    onClick={downloadCSV}
+                    className="w-full group relative flex items-center justify-between p-5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl transition-all shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-4 text-left">
+                      <div className="bg-white/20 p-3 rounded-xl">
+                        <Download className="w-7 h-7 text-white" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-white text-xl">Télécharger les Données du Compte (CSV)</div>
+                        <div className="text-white/80 text-sm">Tableau Excel contenant {result.entries.length} publications avec statistiques de vues, likes et liens.</div>
                       </div>
                     </div>
-                  </a>
-                )}
+                  </button>
 
-                {/* Bouton SD (Only if not purely an image post) */}
-                {sdFormat && sdFormat.url !== hdFormat?.url && !imageUrls.length && (
-                  <a href={`/api/download-proxy?url=${encodeURIComponent(sdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video-sd')}.${sdFormat.ext || 'mp4'}`}
-                     download
-                     className="w-full group relative flex items-center justify-between p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all active:scale-[0.98]">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-slate-900 p-3 rounded-xl"><Video className="w-6 h-6 text-slate-300" /></div>
-                      <div className="text-left">
-                        <div className="font-bold text-white text-lg">Télécharger Vidéo SD</div>
-                        <div className="text-slate-400 text-sm">Qualité Normale {sdFormat.format_note && `(${sdFormat.format_note})`}</div>
+                  {/* Tableau interactif glassmorphic d'aperçu des posts */}
+                  <div className="space-y-3 pt-4">
+                    <h3 className="text-lg font-bold text-white">Aperçu des publications extraites</h3>
+                    <div className="overflow-x-auto border border-slate-800 rounded-2xl">
+                      <table className="w-full border-collapse text-left text-sm text-slate-300">
+                        <thead className="bg-slate-950/60 text-slate-450 font-semibold">
+                          <tr>
+                            <th className="p-4 border-b border-slate-800">Titre / Description</th>
+                            <th className="p-4 border-b border-slate-800">Date</th>
+                            <th className="p-4 border-b border-slate-800 text-right">Vues</th>
+                            <th className="p-4 border-b border-slate-800 text-right">Likes</th>
+                            <th className="p-4 border-b border-slate-800 text-center">Lien</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/50 bg-slate-900/10">
+                          {result.entries.slice(0, 5).map((entry: any, index: number) => (
+                            <tr key={index} className="hover:bg-slate-800/20 transition-colors">
+                              <td className="p-4 max-w-xs truncate font-medium text-white" title={entry.title || entry.description}>
+                                {entry.title || entry.description || `Publication #${index + 1}`}
+                              </td>
+                              <td className="p-4 whitespace-nowrap text-slate-400">
+                                {entry.upload_date ? (
+                                  entry.upload_date.length === 8 ? 
+                                    `${entry.upload_date.slice(6, 8)}/${entry.upload_date.slice(4, 6)}/${entry.upload_date.slice(0, 4)}` : 
+                                    entry.upload_date
+                                ) : "N/A"}
+                              </td>
+                              <td className="p-4 text-right font-mono text-xs text-purple-300">
+                                {entry.view_count ? Number(entry.view_count).toLocaleString() : "-"}
+                              </td>
+                              <td className="p-4 text-right font-mono text-xs text-blue-300">
+                                {entry.like_count ? Number(entry.like_count).toLocaleString() : "-"}
+                              </td>
+                              <td className="p-4 text-center">
+                                {entry.url ? (
+                                  <a 
+                                    href={entry.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center p-1.5 bg-slate-800 hover:bg-purple-650 rounded-lg text-white transition-colors"
+                                    title="Voir la publication originale"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                  </a>
+                                ) : "-"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {result.entries.length > 5 && (
+                      <p className="text-xs text-slate-500 italic text-right">
+                        + {result.entries.length - 5} autres publications sont incluses dans le fichier CSV.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* --- VUE TELECHARGEMENT DE MEDIAS UNIQUE --- */
+                <div className="space-y-4 pt-4">
+                  {/* Images Download Gallery (TikTok Slides or Instagram Carousels) */}
+                  {imageUrls.length > 0 && (
+                    <div className="space-y-4 pt-2">
+                      <h3 className="text-xl font-bold text-white mb-2">Télécharger les Images HD</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {imageUrls.map((imgUrl, index) => (
+                          <div key={index} className="relative group rounded-2xl overflow-hidden border border-slate-850 bg-slate-900/50 aspect-square flex flex-col justify-between p-3">
+                            <img src={imgUrl} alt={`Slide ${index + 1}`} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-60" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+                            
+                            <span className="z-10 bg-slate-950/70 backdrop-blur-md px-2 py-0.5 rounded-lg text-xs font-semibold text-white w-max">
+                              Image {index + 1}
+                            </span>
+                            
+                            <a 
+                              href={`/api/download-proxy?url=${encodeURIComponent(imgUrl)}&filename=${encodeURIComponent(result?.title || 'image')}-${index + 1}.jpg`}
+                              download
+                              className="z-10 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-purple-500/20 active:scale-95"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Télécharger
+                            </a>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </a>
-                )}
+                  )}
 
-                {/* Bouton Audio (Only if not purely an image post) */}
-                {audioFormat && !imageUrls.length && (
-                  <a href={`/api/download-proxy?url=${encodeURIComponent(audioFormat.url)}&filename=${encodeURIComponent(result?.title || 'audio')}.${audioFormat.ext || 'mp3'}`}
-                     download
-                     className="w-full group relative flex items-center justify-between p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all active:scale-[0.98]">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-slate-900 p-3 rounded-xl"><Music className="w-6 h-6 text-slate-300" /></div>
-                      <div className="text-left">
-                        <div className="font-bold text-white text-lg">Télécharger Audio</div>
-                        <div className="text-slate-400 text-sm">Format MP3/M4A ({audioFormat.ext})</div>
+                  {/* Bouton HD (Only if not purely an image post) */}
+                  {hdFormat && !imageUrls.length && (
+                    <a href={`/api/download-proxy?url=${encodeURIComponent(hdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video')}.${hdFormat.ext || 'mp4'}`} 
+                       download
+                       className="w-full group relative flex items-center justify-between p-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl transition-all shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-white/20 p-3 rounded-xl"><Download className="w-6 h-6 text-white" /></div>
+                        <div className="text-left">
+                          <div className="font-bold text-white text-lg">Télécharger Vidéo HD</div>
+                          <div className="text-white/70 text-sm">Qualité Maximale ({hdFormat.ext})</div>
+                        </div>
                       </div>
-                    </div>
-                  </a>
-                )}
-              </div>
+                    </a>
+                  )}
+
+                  {/* Bouton SD (Only if not purely an image post) */}
+                  {sdFormat && sdFormat.url !== hdFormat?.url && !imageUrls.length && (
+                    <a href={`/api/download-proxy?url=${encodeURIComponent(sdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video-sd')}.${sdFormat.ext || 'mp4'}`}
+                       download
+                       className="w-full group relative flex items-center justify-between p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all active:scale-[0.98]">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-slate-900 p-3 rounded-xl"><Video className="w-6 h-6 text-slate-300" /></div>
+                        <div className="text-left">
+                          <div className="font-bold text-white text-lg">Télécharger Vidéo SD</div>
+                          <div className="text-slate-400 text-sm">Qualité Normale {sdFormat.format_note && `(${sdFormat.format_note})`}</div>
+                        </div>
+                      </div>
+                    </a>
+                  )}
+
+                  {/* Bouton Audio (Only if not purely an image post) */}
+                  {audioFormat && !imageUrls.length && (
+                    <a href={`/api/download-proxy?url=${encodeURIComponent(audioFormat.url)}&filename=${encodeURIComponent(result?.title || 'audio')}.${audioFormat.ext || 'mp3'}`}
+                       download
+                       className="w-full group relative flex items-center justify-between p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all active:scale-[0.98]">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-slate-900 p-3 rounded-xl"><Music className="w-6 h-6 text-slate-300" /></div>
+                        <div className="text-left">
+                          <div className="font-bold text-white text-lg">Télécharger Audio</div>
+                          <div className="text-slate-400 text-sm">Format MP3/M4A ({audioFormat.ext})</div>
+                        </div>
+                      </div>
+                    </a>
+                  )}
+                </div>
+              )}
               
               <p className="text-xs text-slate-500 text-center mt-6">
-                En téléchargeant ce média, vous acceptez nos conditions d'utilisation. Réservé à un usage personnel.
+                En téléchargeant ces données ou médias, vous acceptez nos conditions d'utilisation. Réservé à un usage personnel.
               </p>
             </div>
           </div>

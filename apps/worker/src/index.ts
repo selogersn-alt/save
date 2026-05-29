@@ -75,6 +75,22 @@ const worker = new Worker(
         })).slice(0, 10);
       }
 
+      if (output.entries && Array.isArray(output.entries)) {
+        videoData.entries = output.entries.map((entry: any) => ({
+          id: entry.id,
+          title: entry.title || entry.description || '',
+          url: entry.url || entry.webpage_url || entry.original_url || '',
+          description: entry.description || '',
+          view_count: entry.view_count || 0,
+          like_count: entry.like_count || 0,
+          comment_count: entry.comment_count || 0,
+          duration: entry.duration_string || (entry.duration ? `${entry.duration}s` : ''),
+          uploader: entry.uploader || entry.uploader_id || '',
+          upload_date: entry.upload_date || '',
+          thumbnail: entry.thumbnail || ''
+        }));
+      }
+
       // Traitement du résumé via IA
       if (action === 'summary') {
         console.log(`[JOB ${job.id}] Génération du résumé IA...`);
