@@ -99,38 +99,63 @@ const worker = new Worker(
           }
         }
         
-        // FALLBACK D'URGENCE POUR INSTAGRAM (Si yt-dlp échoue totalement à cause d'un blocage IP/Login)
-        if (!output && url.includes('instagram.com/p/')) {
-          console.log(`[JOB ${job.id}] Tentative de Fallback d'urgence via Instagram Embed...`);
+        // FALLBACK D'URGENCE COMPLET POUR INSTAGRAM (Si yt-dlp échoue)
+        if (!output && (url.includes('instagram.com/p/') || url.includes('instagram.com/reel/'))) {
+          console.log(`[JOB ${job.id}] Tentative de Fallback d'urgence via API publique Instagram...`);
           try {
-            const shortcodeMatch = url.match(/\/p\/([a-zA-Z0-9_-]+)/);
+            const shortcodeMatch = url.match(/(?:p|reel)\/([a-zA-Z0-9_-]+)/);
             if (shortcodeMatch) {
-              const embedUrl = `https://www.instagram.com/p/${shortcodeMatch[1]}/embed/captioned/`;
-              const res = await fetch(embedUrl);
+              const shortcode = shortcodeMatch[1];
+              // On utilise l'API graphql publique pour récupérer les données du post sans yt-dlp
+              const gqlUrl = `https://www.instagram.com/graphql/query/?query_hash=b3055c01b4b222b8a47dc12b090e4e64&variables={"shortcode":"${shortcode}"}`;
+              const res = await fetch(gqlUrl, {
+                headers: {
+                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+              });
+              
               if (res.ok) {
-                const html = await res.text();
-                // Chercher l'image principale de l'embed
-                const imgMatch = html.match(/class="EmbeddedMediaImage"[^>]+src="([^"]+)"/);
-                if (imgMatch && imgMatch[1]) {
-                  const decodedUrl = imgMatch[1].replace(/&amp;/g, '&');
+                const data = await res.json();
+                const media = data?.data?.shortcode_media;
+                if (media) {
+                  let carouselEntries: any[] = [];
+                  
+                  // Gestion des carrousels
+                  if (media.edge_sidecar_to_children && media.edge_sidecar_to_children.edges) {
+                    carouselEntries = media.edge_sidecar_to_children.edges.map((edge: any, index: number) => {
+                      const node = edge.node;
+                      return {
+                        id: node.id || String(index),
+                        title: `Slide ${index + 1}`,
+                        url: node.is_video ? node.video_url : node.display_url,
+                        thumbnail: node.display_url,
+                        ext: node.is_video ? 'mp4' : 'jpg',
+                        vcodec: node.is_video ? 'h264' : 'none',
+                        formats: [] 
+                      };
+                    });
+                  }
+
                   output = {
                     extractor: 'instagram',
-                    title: `Post Instagram ${shortcodeMatch[1]}`,
-                    url: decodedUrl,
-                    thumbnail: decodedUrl,
-                    original_url: url
+                    title: media.edge_media_to_caption?.edges[0]?.node?.text || `Post Instagram ${shortcode}`,
+                    url: media.is_video ? media.video_url : media.display_url,
+                    thumbnail: media.display_url,
+                    original_url: url,
+                    entries: carouselEntries.length > 0 ? carouselEntries : undefined
                   };
-                  console.log(`[JOB ${job.id}] Fallback Instagram Embed réussi ! Image extraite.`);
+                  console.log(`[JOB ${job.id}] Fallback GraphQL Instagram réussi !`);
                 }
               }
             }
           } catch(fallbackErr) {
-            console.error(`[JOB ${job.id}] Fallback Instagram a également échoué:`, fallbackErr);
+            console.error(`[JOB ${job.id}] Fallback Instagram GraphQL a également échoué:`, fallbackErr);
           }
         }
 
         if (!output) {
-          throw new Error(`Erreur d'extraction yt-dlp: ${dlErr.message || dlErr.stderr || 'Inconnue'}`);
+          const errDump = dlErr ? (dlErr.shortMessage || dlErr.message || String(dlErr)) : "Inconnue";
+          throw new Error(`Erreur critique: ${errDump}`);
         }
       }
 
