@@ -39,6 +39,11 @@ const getExtractorOptions = (url: string, action: string, cookiesPath?: string) 
     baseOptions.extractorArgs = 'tiktok:api_hostname=api16-normal-c-useast1a.tiktokv.com';
   }
 
+  if (url.includes('instagram.com')) {
+    // Empêcher yt-dlp de chercher absolument une vidéo sur les posts d'images Instagram
+    baseOptions.format = 'all';
+  }
+
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     if (action === 'summary') {
       baseOptions.writeAutoSub = true;
