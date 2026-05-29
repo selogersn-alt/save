@@ -57,19 +57,20 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     const formats = result.formats || [];
     
     // Audio (Best audio only)
-    audioFormat = formats.find((f: any) => f.vcodec === 'none' && f.acodec !== 'none') || formats[0];
+    audioFormat = formats.find((f: any) => f.ext === 'm4a' || f.ext === 'mp3' || f.ext === 'webm' || (f.vcodec === 'none' && f.acodec !== 'none'));
+    if (!audioFormat && formats.length > 0) audioFormat = formats[0]; // fallback
     
-    // Vidéos (Avec video + audio mixé)
-    const videoFormats = formats.filter((f: any) => f.vcodec !== 'none' && f.acodec !== 'none');
+    // Vidéos (On cherche une dimension ou une extension mp4 sans vcodec explicite 'none')
+    const videoFormats = formats.filter((f: any) => (f.height > 0 || f.width > 0) || (f.ext === 'mp4' && f.vcodec !== 'none'));
     
-    // HD: On privilégie les formats vidéo directs extraits, et on se replie sur result.url uniquement s'il n'y en a pas et que ce n'est pas une page HTML
+    // HD: On privilégie les formats vidéo directs extraits
     hdFormat = videoFormats.length > 0
-      ? videoFormats.reduce((prev: any, current: any) => (prev.height > current.height) ? prev : current, videoFormats[0])
+      ? videoFormats.reduce((prev: any, current: any) => ((prev.height || 0) > (current.height || 0)) ? prev : current, videoFormats[0])
       : (result.url && !result.url.includes('instagram.com') && !result.url.includes('youtube.com') && !result.url.includes('youtu.be') && !result.url.includes('facebook.com')
          ? { url: result.url, format_note: "Qualité Max", ext: "mp4" } 
          : null);
 
-    // SD: Une qualité inférieure (ex: 480p ou 360p)
+    // SD: Une qualité inférieure
     sdFormat = videoFormats.find((f: any) => f.height && f.height <= 480) || 
                videoFormats.find((f: any) => f.height && f.height < (hdFormat?.height || 720));
 
@@ -114,7 +115,7 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
       imageUrls = result.images;
     } else if (result.url && typeof result.url === 'string' && (result.url.includes('.jpg') || result.url.includes('.png') || result.url.includes('.webp') || result.url.includes('.jpeg'))) {
       imageUrls = [result.url];
-    } else if (result.extractor === 'instagram' && (!formats || formats.length === 0 || !formats.some((f: any) => f.vcodec !== 'none'))) {
+    } else if (result.extractor === 'instagram' && (!hdFormat || !videoFormats.length)) {
       if (result.url) imageUrls = [result.url];
     }
   }

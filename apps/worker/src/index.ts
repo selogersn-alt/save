@@ -92,19 +92,20 @@ const worker = new Worker(
       };
 
       if (action !== 'summary') {
-        // Changement critique : on autorise f.protocol === 'http' et f.protocol === 'https' car beaucoup de CDNs (comme TikTok)
-        // renvoient des liens http natifs qui se faisaient filtrer et supprimer !
-        videoData.formats = output.formats?.filter((f: any) => f.url && (f.protocol === 'https' || f.protocol === 'http' || !f.protocol)).map((f: any) => ({
+        // Changement critique : yt-dlp trie les formats du pire au meilleur.
+        // On prend les 40 DERNIERS (slice(-40)) pour être sûr d'avoir les formats HD (720p, 1080p).
+        // On enlève le vcodec || 'none' pour ne pas fausser le frontend sur TikTok/Instagram.
+        videoData.formats = output.formats?.filter((f: any) => f.url && !f.url.includes('.m3u8')).map((f: any) => ({
           format_id: f.format_id,
           ext: f.ext,
           resolution: f.resolution,
           height: f.height || null,
           width: f.width || null,
           filesize: f.filesize || null,
-          vcodec: f.vcodec || 'none',
-          acodec: f.acodec || 'none',
+          vcodec: f.vcodec, // Ne pas forcer à 'none'
+          acodec: f.acodec, // Ne pas forcer à 'none'
           url: f.url
-        })).slice(0, 40);
+        })).slice(-40);
       }
 
       if (output.entries && Array.isArray(output.entries)) {
