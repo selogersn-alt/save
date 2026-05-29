@@ -27,7 +27,7 @@ const getExtractorOptions = (url: string, action: string, cookiesPath?: string) 
   };
 
   if (cookiesPath) {
-    baseOptions.cookiefile = cookiesPath;
+    baseOptions.cookies = cookiesPath;
   }
 
   if (url.includes('tiktok.com')) {
