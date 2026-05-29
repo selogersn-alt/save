@@ -19,8 +19,7 @@ export default function DownloaderForm() {
       const formData = new FormData(e.currentTarget);
       const action = formData.get('action');
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:13001';
-      const res = await fetch(`${apiUrl}/api/extract`, {
+      const res = await fetch(`/api/extract`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, action })
@@ -31,7 +30,7 @@ export default function DownloaderForm() {
       
       const pollStatus = async (id: string) => {
         try {
-          const statusRes = await fetch(`${apiUrl}/api/status/${id}`);
+          const statusRes = await fetch(`/api/status/${id}`);
           if (!statusRes.ok) throw new Error("Impossible de récupérer le statut.");
           const statusData = await statusRes.json();
           
