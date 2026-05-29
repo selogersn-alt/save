@@ -209,6 +209,9 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
           <div className="w-full max-w-md h-2 bg-slate-800 rounded-full overflow-hidden mt-8">
             <div className="h-full bg-gradient-to-r from-purple-500 to-blue-500 w-1/2 animate-pulse rounded-full"></div>
           </div>
+          <Link href="/" className="mt-8 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-sm rounded-2xl transition-all shadow-md hover:scale-[1.02] active:scale-95">
+            Annuler et retourner à l'accueil
+          </Link>
         </div>
       ) : status === "failed" ? (
         <div className="glass-card p-12 rounded-3xl w-full text-center space-y-6 border border-red-500/30">
@@ -475,6 +478,16 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                 </div>
               )}
               
+              {/* Bouton global premium pour télécharger un autre média */}
+              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-8 border-t border-slate-800/60 w-full">
+                <Link href="/" className="px-10 py-4 bg-gradient-to-r from-purple-650 to-indigo-650 hover:from-purple-550 hover:to-indigo-550 text-white font-extrabold text-sm rounded-2xl flex items-center justify-center gap-2.5 transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-purple-950/20">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Télécharger une autre vidéo / image
+                </Link>
+              </div>
+
               <p className="text-xs text-slate-500 text-center mt-6">
                 En téléchargeant ces données ou médias, vous acceptez nos conditions d'utilisation. Réservé à un usage personnel.
               </p>

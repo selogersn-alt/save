@@ -196,7 +196,9 @@ app.get(
       }
 
       const finalFilename = filename || `media-${Date.now()}`;
-      reply.header('Content-Disposition', `attachment; filename="${encodeURIComponent(finalFilename)}"`);
+      // Noms de fichier sécurisés avec fallback ASCII et support complet de l'encodage UTF-8 (pour éviter les fichiers "download-proxy")
+      const safeAsciiFilename = finalFilename.replace(/[^a-zA-Z0-9._-]/g, '_');
+      reply.header('Content-Disposition', `attachment; filename="${safeAsciiFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`);
 
       // Fonction récursive interne pour gérer les redirections et streamer le flux sans buffering
       const executeProxy = (targetUrl: string): Promise<void> => {
@@ -237,6 +239,9 @@ app.get(
             if (res.headers['accept-ranges']) {
               reply.header('Accept-Ranges', res.headers['accept-ranges']);
             }
+
+            // Indiquer à Fastify que nous gérons manuellement la réponse pour éviter la duplication
+            reply.sent = true;
 
             // Piper le flux de données directement sur le socket brut du client Fastify
             res.pipe(reply.raw);
