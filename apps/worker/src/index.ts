@@ -80,7 +80,23 @@ const worker = new Worker(
 
       const options = getExtractorOptions(url, action, cookiesPath);
       console.log(`[JOB ${job.id}] Requête youtube-dl-exec...`);
-      const output: any = await youtubedl(url, options);
+      let output: any;
+      try {
+        output = await youtubedl(url, options);
+      } catch (dlErr: any) {
+        // yt-dlp renvoie souvent un code d'erreur 1 pour les posts Instagram sans vidéos (images pures)
+        // en disant "No video formats found!", mais il réussit quand même à afficher le JSON contenant l'URL de l'image !
+        if (dlErr.stdout) {
+          try {
+            output = JSON.parse(dlErr.stdout);
+            console.log(`[JOB ${job.id}] JSON récupéré avec succès depuis la sortie d'erreur (contournement image Instagram).`);
+          } catch (parseErr) {
+            throw new Error(`Erreur critique yt-dlp: ${dlErr.message || dlErr.stderr || 'Inconnue'}`);
+          }
+        } else {
+          throw new Error(`Erreur d'extraction yt-dlp: ${dlErr.message || dlErr.stderr || 'Inconnue'}`);
+        }
+      }
 
       const videoData: any = {
         title: output.title,
