@@ -5,7 +5,7 @@ import { Download, Video, Music } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface DownloaderFormProps {
-  platform?: "all" | "tiktok" | "youtube" | "instagram";
+  platform?: "all" | "tiktok" | "youtube" | "instagram" | "facebook";
 }
 
 export default function DownloaderForm({ platform = "all" }: DownloaderFormProps) {
@@ -19,7 +19,8 @@ export default function DownloaderForm({ platform = "all" }: DownloaderFormProps
       case "tiktok": return "Collez le lien de la vidéo TikTok ici...";
       case "youtube": return "Collez le lien YouTube ici...";
       case "instagram": return "Collez le lien de la vidéo ou du Reel Instagram ici...";
-      default: return "Collez le lien TikTok, YouTube ou Instagram ici...";
+      case "facebook": return "Collez le lien de la vidéo ou du Reel Facebook ici...";
+      default: return "Collez le lien TikTok, YouTube, Instagram ou Facebook ici...";
     }
   };
 
