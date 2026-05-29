@@ -170,12 +170,11 @@ app.get(
     try {
       request.log.info(`Proxying download from: ${url}`);
       
-      // Détermination intelligente et précise du Referer en fonction du CDN hôte
-      let referer: string | undefined = undefined;
-      const lowerUrl = url.toLowerCase();
+      let userAgent = (request.headers['user-agent'] as string) || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
       
-      if (lowerUrl.includes('tiktok') || lowerUrl.includes('tiktokv') || lowerUrl.includes('byteoversea') || lowerUrl.includes('ibyteimg')) {
+      if (lowerUrl.includes('tiktok') || lowerUrl.includes('byteoversea') || lowerUrl.includes('ibyteimg')) {
         referer = 'https://www.tiktok.com/';
+        userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
       } else if (lowerUrl.includes('instagram') || lowerUrl.includes('cdninstagram')) {
         referer = 'https://www.instagram.com/';
       } else if (lowerUrl.includes('youtube') || lowerUrl.includes('youtu.be') || lowerUrl.includes('googlevideo')) {
@@ -185,7 +184,7 @@ app.get(
       }
 
       const headers: Record<string, string> = {
-        'User-Agent': (request.headers['user-agent'] as string) || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': userAgent,
         'Accept': '*/*',
         'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
         'Connection': 'keep-alive'
@@ -223,23 +222,26 @@ app.get(
               const redirectUrl = res.headers.location;
               request.log.info(`Redirecting proxy to: ${redirectUrl}`);
               
-              // Résoudre l'URL absolue ou relative de redirection par rapport à l'URL courante
               const absoluteRedirectUrl = new URL(redirectUrl, targetUrl).toString();
               resolve(executeProxy(absoluteRedirectUrl));
               return;
             }
 
             if (res.statusCode && res.statusCode >= 400) {
-              reject(new Error(`Le CDN d'origine a renvoyé une erreur ${res.statusCode} pour l'URL demandée.`));
+              // ERREUR CDN: On renvoie du HTML au lieu de laisser Fastify renvoyer du JSON
+              reply.raw.setHeader('Content-Type', 'text/html; charset=utf-8');
+              reply.raw.write(`<script>alert("Erreur de téléchargement: Le serveur source (TikTok/Instagram) a bloqué le proxy (Code ${res.statusCode}).\\n\\nAstuce: Retournez sur la page et utilisez le bouton \\"Lien Direct\\"."); window.close();</script>`);
+              reply.raw.end();
+              reply.sent = true;
+              resolve();
               return;
             }
 
-            // Définir Content-Disposition seulement après le succès de la requête !
+            // Succès ! Définir Content-Disposition
             const finalFilename = filename || `media-${Date.now()}`;
             const safeAsciiFilename = finalFilename.replace(/[^a-zA-Z0-9._-]/g, '_');
             reply.raw.setHeader('Content-Disposition', `attachment; filename="${safeAsciiFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`);
 
-            // Copier les en-têtes essentiels du flux d'origine
             const contentType = res.headers['content-type'] || 'application/octet-stream';
             reply.raw.setHeader('Content-Type', contentType);
             
@@ -250,25 +252,14 @@ app.get(
               reply.raw.setHeader('Accept-Ranges', res.headers['accept-ranges']);
             }
 
-            // Indiquer à Fastify que nous gérons manuellement la réponse pour éviter la duplication
             reply.sent = true;
-
-            // Piper le flux de données directement sur le socket brut du client Fastify
             res.pipe(reply.raw);
 
-            res.on('end', () => {
-              resolve();
-            });
-
-            res.on('error', (err) => {
-              reject(err);
-            });
+            res.on('end', () => resolve());
+            res.on('error', (err) => reject(err));
           });
 
-          req.on('error', (err) => {
-            reject(err);
-          });
-
+          req.on('error', (err) => reject(err));
           req.end();
         });
       };
@@ -276,11 +267,12 @@ app.get(
       await executeProxy(url);
     } catch (err: any) {
       request.log.error(err, 'Proxy download failed.');
-      return reply.status(500).send({
-        error: "Le serveur de téléchargement n'a pas pu récupérer ce fichier média.",
-        message: err.message,
-        url: url
-      });
+      if (!reply.sent) {
+        reply.raw.setHeader('Content-Type', 'text/html; charset=utf-8');
+        reply.raw.write(`<script>alert("Erreur critique du serveur proxy: ${err.message.replace(/"/g, "'")}.\\n\\nAstuce: Utilisez le Lien Direct."); window.close();</script>`);
+        reply.raw.end();
+        reply.sent = true;
+      }
     }
   }
 );
