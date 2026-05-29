@@ -61,6 +61,7 @@ const worker = new Worker(
         duration: output.duration_string || `${output.duration}s`,
         extractor: output.extractor,
         original_url: output.original_url,
+        url: output.url || output.webpage_url,
       };
 
       if (action !== 'summary') {

@@ -60,10 +60,10 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     // Vidéos (Avec video + audio mixé)
     const videoFormats = formats.filter((f: any) => f.vcodec !== 'none' && f.acodec !== 'none');
     
-    // HD: La plus haute résolution ou direct URL
-    hdFormat = result.url ? { url: result.url, format_note: "Qualité Max", ext: "mp4" } : videoFormats.reduce((prev: any, current: any) => {
-      return (prev.height > current.height) ? prev : current;
-    }, videoFormats[0]);
+    // HD: On privilégie les formats vidéo directs extraits, et on se replie sur result.url uniquement s'il n'y en a pas
+    hdFormat = videoFormats.length > 0
+      ? videoFormats.reduce((prev: any, current: any) => (prev.height > current.height) ? prev : current, videoFormats[0])
+      : (result.url ? { url: result.url, format_note: "Qualité Max", ext: "mp4" } : null);
 
     // SD: Une qualité inférieure (ex: 480p ou 360p)
     sdFormat = videoFormats.find((f: any) => f.height && f.height <= 480) || 

@@ -163,27 +163,37 @@ app.get(
     try {
       request.log.info(`Proxying download from: ${url}`);
       
-      let referer = 'https://www.tiktok.com/';
-      if (url.includes('instagram.com')) {
+      // Détermination intelligente et précise du Referer en fonction du CDN hôte
+      let referer: string | undefined = undefined;
+      const lowerUrl = url.toLowerCase();
+      
+      if (lowerUrl.includes('tiktok') || lowerUrl.includes('tiktokv') || lowerUrl.includes('byteoversea') || lowerUrl.includes('ibyteimg')) {
+        referer = 'https://www.tiktok.com/';
+      } else if (lowerUrl.includes('instagram') || lowerUrl.includes('cdninstagram')) {
         referer = 'https://www.instagram.com/';
-      } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      } else if (lowerUrl.includes('youtube') || lowerUrl.includes('youtu.be') || lowerUrl.includes('googlevideo')) {
         referer = 'https://www.youtube.com/';
-      } else if (url.includes('facebook.com')) {
+      } else if (lowerUrl.includes('facebook') || lowerUrl.includes('fbcdn') || lowerUrl.includes('fbsbx')) {
         referer = 'https://www.facebook.com/';
       }
 
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': (request.headers['user-agent'] as string) || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': '*/*',
-          'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Referer': referer,
-          'Connection': 'keep-alive'
-        }
-      });
+      const headers: Record<string, string> = {
+        'User-Agent': (request.headers['user-agent'] as string) || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Connection': 'keep-alive'
+      };
+
+      if (referer) {
+        headers['Referer'] = referer;
+      }
+
+      const res = await fetch(url, { headers });
       
       if (!res.ok) {
-        return reply.status(res.status).send({ error: `Failed to fetch media from source CDN: ${res.statusText}` });
+        request.log.warn(`CDN fetch failed with status ${res.status}. Falling back to direct redirect to CDN.`);
+        // STRATÉGIE DE REPLI DIRECTE : Si le proxy échoue, on redirige l'utilisateur vers le CDN d'origine au lieu de télécharger un fichier JSON corrompu !
+        return reply.redirect(url);
       }
 
       const contentType = res.headers.get('content-type') || 'application/octet-stream';
@@ -198,11 +208,17 @@ app.get(
         const nodeStream = Readable.fromWeb(res.body as any);
         return reply.send(nodeStream);
       } else {
-        return reply.status(500).send({ error: 'Response body is empty' });
+        request.log.warn('Response body is empty. Redirecting to direct CDN URL.');
+        return reply.redirect(url);
       }
     } catch (err: any) {
-      request.log.error(err, 'Proxy download failed');
-      return reply.status(500).send({ error: `Proxy download server error: ${err.message}` });
+      request.log.error(err, 'Proxy download failed. Redirecting to direct CDN URL.');
+      // STRATÉGIE DE REPLI DIRECTE : En cas d'erreur serveur, on redirige l'utilisateur vers le CDN d'origine au lieu de télécharger un fichier JSON corrompu !
+      try {
+        return reply.redirect(url);
+      } catch {
+        return reply.status(500).send({ error: `Proxy download server error: ${err.message}` });
+      }
     }
   }
 );
