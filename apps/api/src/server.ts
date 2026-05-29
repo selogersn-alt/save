@@ -165,7 +165,7 @@ app.get(
     const { url, filename } = request.query;
     // Empêcher le navigateur de transmettre le referer de notre site lors d'une redirection,
     // ce qui évite les blocages "Access Denied" (403) par des CDN comme Akamai (TikTok, etc.)
-    reply.header('Referrer-Policy', 'no-referrer');
+    reply.raw.setHeader('Referrer-Policy', 'no-referrer');
     
     try {
       request.log.info(`Proxying download from: ${url}`);
@@ -198,7 +198,7 @@ app.get(
       const finalFilename = filename || `media-${Date.now()}`;
       // Noms de fichier sécurisés avec fallback ASCII et support complet de l'encodage UTF-8 (pour éviter les fichiers "download-proxy")
       const safeAsciiFilename = finalFilename.replace(/[^a-zA-Z0-9._-]/g, '_');
-      reply.header('Content-Disposition', `attachment; filename="${safeAsciiFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`);
+      reply.raw.setHeader('Content-Disposition', `attachment; filename="${safeAsciiFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`);
 
       // Fonction récursive interne pour gérer les redirections et streamer le flux sans buffering
       const executeProxy = (targetUrl: string): Promise<void> => {
@@ -241,13 +241,13 @@ app.get(
 
             // Copier les en-têtes essentiels du flux d'origine
             const contentType = res.headers['content-type'] || 'application/octet-stream';
-            reply.header('Content-Type', contentType);
+            reply.raw.setHeader('Content-Type', contentType);
             
             if (res.headers['content-length']) {
-              reply.header('Content-Length', res.headers['content-length']);
+              reply.raw.setHeader('Content-Length', res.headers['content-length']);
             }
             if (res.headers['accept-ranges']) {
-              reply.header('Accept-Ranges', res.headers['accept-ranges']);
+              reply.raw.setHeader('Accept-Ranges', res.headers['accept-ranges']);
             }
 
             // Indiquer à Fastify que nous gérons manuellement la réponse pour éviter la duplication
