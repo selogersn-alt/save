@@ -111,12 +111,29 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     // Détection des images (Carrousels Instagram, Slides TikTok, etc.)
     if (carouselImages.length > 0) {
       imageUrls = carouselImages;
-    } else if (result.images && Array.isArray(result.images)) {
+    } else if (result.images && Array.isArray(result.images) && result.images.length > 0) {
       imageUrls = result.images;
     } else if (result.url && typeof result.url === 'string' && (result.url.includes('.jpg') || result.url.includes('.png') || result.url.includes('.webp') || result.url.includes('.jpeg'))) {
       imageUrls = [result.url];
     } else if (result.extractor === 'instagram' && (!hdFormat || !videoFormats.length)) {
-      if (result.url) imageUrls = [result.url];
+      // Pour Instagram, yt-dlp peut mettre l'image dans thumbnails ou comme format.
+      // Éviter result.url si ce n'est pas un fichier média direct (sinon on télécharge la page web html).
+      let instaImg = '';
+      if (result.thumbnails && result.thumbnails.length > 0) {
+        // Prendre la miniature la plus grande
+        const bestThumb = result.thumbnails.reduce((prev: any, current: any) => ((prev.height || 0) > (current.height || 0)) ? prev : current);
+        if (bestThumb && bestThumb.url) instaImg = bestThumb.url;
+      }
+      if (!instaImg && formats && formats.length > 0) {
+        const imgFormat = formats.find((f: any) => f.ext === 'jpg' || f.ext === 'png' || f.ext === 'webp');
+        if (imgFormat) instaImg = imgFormat.url;
+      }
+      
+      if (instaImg) {
+        imageUrls = [instaImg];
+      } else if (result.url && !result.url.includes('instagram.com/p/')) {
+        imageUrls = [result.url];
+      }
     }
   }
 

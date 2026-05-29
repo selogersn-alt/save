@@ -101,6 +101,7 @@ const worker = new Worker(
       const videoData: any = {
         title: output.title,
         thumbnail: output.thumbnail,
+        thumbnails: output.thumbnails || [],
         duration: output.duration_string || `${output.duration}s`,
         extractor: output.extractor,
         original_url: output.original_url,
