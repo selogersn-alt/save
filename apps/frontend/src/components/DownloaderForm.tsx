@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Video, Music } from "lucide-react";
+import { Download, Video, Music, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface DownloaderFormProps {
@@ -88,10 +88,21 @@ export default function DownloaderForm({ platform = "all" }: DownloaderFormProps
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-8 text-base font-medium mt-2">
+        <div className="flex flex-wrap items-center justify-center gap-6 md:gap-8 text-base font-medium mt-2">
           <label className="flex items-center gap-3 cursor-pointer group">
             <div className="relative flex items-center justify-center">
-              <input type="radio" name="action" value="video" defaultChecked className="peer sr-only" />
+              <input type="radio" name="action" value="auto" defaultChecked className="peer sr-only" />
+              <div className="w-5 h-5 rounded-full border-2 border-slate-600 peer-checked:border-purple-500 peer-checked:bg-purple-500 transition-all"></div>
+              <div className="absolute w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+            </div>
+            <span className="text-slate-300 group-hover:text-white transition-colors flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" /> Auto-Détecter (Vidéo, Audio, Images)
+            </span>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div className="relative flex items-center justify-center">
+              <input type="radio" name="action" value="video" className="peer sr-only" />
               <div className="w-5 h-5 rounded-full border-2 border-slate-600 peer-checked:border-purple-500 peer-checked:bg-purple-500 transition-all"></div>
               <div className="absolute w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
             </div>
