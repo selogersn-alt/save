@@ -50,6 +50,8 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
   let sdFormat: any = null;
   let audioFormat: any = null;
   let imageUrls: string[] = [];
+  let carouselImages: string[] = [];
+  let carouselVideos: any[] = [];
 
   if (result) {
     const formats = result.formats || [];
@@ -69,13 +71,45 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     sdFormat = videoFormats.find((f: any) => f.height && f.height <= 480) || 
                videoFormats.find((f: any) => f.height && f.height < (hdFormat?.height || 720));
 
+    // Une playlist est considérée comme un compte/chaîne si l'extracteur le spécifie
+    // ou si l'URL ne correspond pas à un post/vidéo unique.
+    const isProfileOrPlaylist = result.entries && Array.isArray(result.entries) && result.entries.length > 0 &&
+      (result.extractor?.includes('user') || result.extractor?.includes('channel') || result.extractor?.includes('tab') || result.extractor?.includes('playlist') ||
+       (!result.original_url?.includes('/p/') && !result.original_url?.includes('/reel/') && !result.original_url?.includes('/video/')));
+
+    if (result.entries && Array.isArray(result.entries) && !isProfileOrPlaylist) {
+      result.entries.forEach((entry: any) => {
+        const hasVideo = (entry.formats && entry.formats.some((f: any) => f.vcodec !== 'none')) ||
+                         (entry.vcodec && entry.vcodec !== 'none') ||
+                         (entry.url && entry.url.includes('.mp4')) ||
+                         (entry.ext === 'mp4');
+                         
+        if (hasVideo) {
+          let videoUrl = entry.url;
+          if (entry.formats && entry.formats.length > 0) {
+            const bestFormat = entry.formats.reduce((prev: any, current: any) => (prev.height > current.height) ? prev : current, entry.formats[0]);
+            videoUrl = bestFormat.url || videoUrl;
+          }
+          carouselVideos.push({
+            title: entry.title || `Vidéo ${carouselVideos.length + 1}`,
+            url: videoUrl,
+            thumbnail: entry.thumbnail || result.thumbnail || '/favicon.svg',
+            ext: entry.ext || 'mp4'
+          });
+        } else {
+          const imgUrl = entry.url || entry.thumbnail;
+          if (imgUrl) {
+            carouselImages.push(imgUrl);
+          }
+        }
+      });
+    }
+
     // Détection des images (Carrousels Instagram, Slides TikTok, etc.)
-    if (result.images && Array.isArray(result.images)) {
+    if (carouselImages.length > 0) {
+      imageUrls = carouselImages;
+    } else if (result.images && Array.isArray(result.images)) {
       imageUrls = result.images;
-    } else if (result.entries && Array.isArray(result.entries)) {
-      imageUrls = result.entries
-        .map((entry: any) => entry.url || entry.thumbnail)
-        .filter((url: any) => url && typeof url === 'string');
     } else if (result.url && typeof result.url === 'string' && (result.url.includes('.jpg') || result.url.includes('.png') || result.url.includes('.webp') || result.url.includes('.jpeg'))) {
       imageUrls = [result.url];
     } else if (result.extractor === 'instagram' && (!formats || formats.length === 0 || !formats.some((f: any) => f.vcodec !== 'none'))) {
@@ -83,7 +117,9 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     }
   }
 
-  const isAccountOrPlaylist = result && result.entries && Array.isArray(result.entries) && result.entries.length > 0;
+  const isAccountOrPlaylist = result && result.entries && Array.isArray(result.entries) && result.entries.length > 0 &&
+    (result.extractor?.includes('user') || result.extractor?.includes('channel') || result.extractor?.includes('tab') || result.extractor?.includes('playlist') ||
+     (!result.original_url?.includes('/p/') && !result.original_url?.includes('/reel/') && !result.original_url?.includes('/video/')));
 
   const downloadCSV = () => {
     if (!result || !result.entries) return;
@@ -294,10 +330,38 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                 </div>
               ) : (
                 /* --- VUE TELECHARGEMENT DE MEDIAS UNIQUE --- */
-                <div className="space-y-4 pt-4">
+                <div className="space-y-6 pt-4 w-full">
+                  
+                  {/* Vidéos de Carrousel (Multi-vidéos Instagram / TikTok) */}
+                  {carouselVideos.length > 0 && (
+                    <div className="space-y-4 pt-2 w-full">
+                      <h3 className="text-xl font-bold text-white mb-2">Télécharger les Vidéos du Carrousel (HD)</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {carouselVideos.map((video, index) => (
+                          <div key={index} className="glass-card p-4 rounded-2xl border border-slate-800 flex items-center gap-4 bg-slate-900/40 hover:bg-slate-900/60 transition-colors w-full">
+                            <img src={video.thumbnail} alt={`Thumb ${index + 1}`} className="w-20 aspect-video rounded-xl object-cover border border-slate-800 shrink-0" />
+                            <div className="flex-grow text-left min-w-0 flex flex-col justify-between h-full">
+                              <h4 className="font-bold text-white text-sm truncate">{video.title}</h4>
+                              <p className="text-slate-400 text-xs mt-1">Format: {video.ext.toUpperCase()}</p>
+                              
+                              <a 
+                                href={`/api/download-proxy?url=${encodeURIComponent(video.url)}&filename=${encodeURIComponent(result?.title || 'video')}-${index + 1}.${video.ext}`}
+                                download
+                                className="mt-3 w-max inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg active:scale-95"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                Télécharger la Vidéo
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Images Download Gallery (TikTok Slides or Instagram Carousels) */}
                   {imageUrls.length > 0 && (
-                    <div className="space-y-4 pt-2">
+                    <div className="space-y-4 pt-2 w-full">
                       <h3 className="text-xl font-bold text-white mb-2">Télécharger les Images HD</h3>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {imageUrls.map((imgUrl, index) => (
@@ -323,8 +387,8 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                     </div>
                   )}
 
-                  {/* Bouton HD (Only if not purely an image post) */}
-                  {hdFormat && !imageUrls.length && (
+                  {/* Bouton HD (Only if not purely an image or multi-video post) */}
+                  {hdFormat && !imageUrls.length && !carouselVideos.length && (
                     <a href={`/api/download-proxy?url=${encodeURIComponent(hdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video')}.${hdFormat.ext || 'mp4'}`} 
                        download
                        className="w-full group relative flex items-center justify-between p-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl transition-all shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]">
@@ -338,8 +402,8 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                     </a>
                   )}
 
-                  {/* Bouton SD (Only if not purely an image post) */}
-                  {sdFormat && sdFormat.url !== hdFormat?.url && !imageUrls.length && (
+                  {/* Bouton SD (Only if not purely an image or multi-video post) */}
+                  {sdFormat && sdFormat.url !== hdFormat?.url && !imageUrls.length && !carouselVideos.length && (
                     <a href={`/api/download-proxy?url=${encodeURIComponent(sdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video-sd')}.${sdFormat.ext || 'mp4'}`}
                        download
                        className="w-full group relative flex items-center justify-between p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all active:scale-[0.98]">
@@ -353,8 +417,8 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                     </a>
                   )}
 
-                  {/* Bouton Audio (Only if not purely an image post) */}
-                  {audioFormat && !imageUrls.length && (
+                  {/* Bouton Audio (Only if not purely an image or multi-video post) */}
+                  {audioFormat && !imageUrls.length && !carouselVideos.length && (
                     <a href={`/api/download-proxy?url=${encodeURIComponent(audioFormat.url)}&filename=${encodeURIComponent(result?.title || 'audio')}.${audioFormat.ext || 'mp3'}`}
                        download
                        className="w-full group relative flex items-center justify-between p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all active:scale-[0.98]">
