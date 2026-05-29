@@ -349,6 +349,19 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                 /* --- VUE TELECHARGEMENT DE MEDIAS UNIQUE --- */
                 <div className="space-y-6 pt-4 w-full">
                   
+                  {/* Message d'aide intelligent pour Instagram (Contournement des blocages IP) */}
+                  {result?.extractor === 'instagram' && (
+                    <div className="bg-amber-500/10 border border-amber-500/25 p-5 rounded-2xl text-left space-y-2 animate-fade-in">
+                      <div className="flex items-center gap-2.5 text-amber-400 font-bold text-sm">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        Astuce de Téléchargement Instagram
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        Instagram restreint parfois les serveurs d'hébergement. Si le bouton principal de téléchargement échoue (ou génère un fichier illisible), utilisez le bouton <strong>"Lien Direct"</strong> situé juste à côté. Cela ouvrira l'image ou la vidéo en direct dans un nouvel onglet, où vous pourrez faire un clic droit ou appui long pour l'enregistrer instantanément !
+                      </p>
+                    </div>
+                  )}
+                  
                   {/* Vidéos de Carrousel (Multi-vidéos Instagram / TikTok) */}
                   {carouselVideos.length > 0 && (
                     <div className="space-y-4 pt-2 w-full">
@@ -361,14 +374,25 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                               <h4 className="font-bold text-white text-sm truncate">{video.title}</h4>
                               <p className="text-slate-400 text-xs mt-1">Format: {video.ext.toUpperCase()}</p>
                               
-                              <a 
-                                href={`/api/download-proxy?url=${encodeURIComponent(video.url)}&filename=${encodeURIComponent(result?.title || 'video')}-${index + 1}.${video.ext}`}
-                                download
-                                className="mt-3 w-max inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg active:scale-95"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                                Télécharger la Vidéo
-                              </a>
+                              <div className="flex items-center gap-2 mt-3">
+                                <a 
+                                  href={`/api/download-proxy?url=${encodeURIComponent(video.url)}&filename=${encodeURIComponent(result?.title || 'video')}-${index + 1}.${video.ext}`}
+                                  download
+                                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-purple-650 to-indigo-650 hover:from-purple-550 hover:to-indigo-550 text-white font-bold text-xs rounded-xl transition-all shadow-md active:scale-95"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  Télécharger
+                                </a>
+                                <a 
+                                  href={video.url} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-350 hover:text-white font-bold text-xs rounded-xl transition-all border border-slate-700 active:scale-95"
+                                  title="Ouvrir dans un nouvel onglet si le bouton principal échoue"
+                                >
+                                  Lien Direct
+                                </a>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -414,15 +438,24 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                               </span>
                             </div>
                             
-                            {/* Download Button Centered Below the Image */}
-                            <div className="flex flex-col items-center w-full">
+                            {/* Download Buttons Below the Image */}
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
                               <a 
                                 href={`/api/download-proxy?url=${encodeURIComponent(imgUrl)}&filename=${encodeURIComponent(result?.title || 'image')}-${index + 1}.jpg`}
                                 download
-                                className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-sm rounded-2xl flex items-center justify-center gap-3.5 transition-all shadow-lg shadow-purple-950/40 hover:shadow-purple-500/20 active:scale-[0.98]"
+                                className="flex-1 py-4 bg-gradient-to-r from-purple-600 to-indigo-650 hover:from-purple-500 hover:to-indigo-550 text-white font-extrabold text-sm rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-purple-950/40 hover:shadow-purple-500/20 active:scale-[0.98]"
                               >
                                 <Download className="w-5 h-5" />
-                                Télécharger l'Image {index + 1} en HD
+                                Télécharger en HD
+                              </a>
+                              <a 
+                                href={imgUrl} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="w-full sm:w-auto py-4 px-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white font-extrabold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                                title="Ouvrir l'image en direct dans un nouvel onglet"
+                              >
+                                Lien Direct
                               </a>
                             </div>
                           </div>
@@ -433,17 +466,29 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
 
                   {/* Bouton HD (Only if not purely an image or multi-video post) */}
                   {hdFormat && !imageUrls.length && !carouselVideos.length && (
-                    <a href={`/api/download-proxy?url=${encodeURIComponent(hdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video')}.${hdFormat.ext || 'mp4'}`} 
-                       download
-                       className="w-full group relative flex items-center justify-between p-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl transition-all shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-white/20 p-3 rounded-xl"><Download className="w-6 h-6 text-white" /></div>
-                        <div className="text-left">
-                          <div className="font-bold text-white text-lg">Télécharger Vidéo HD</div>
-                          <div className="text-white/70 text-sm">Qualité Maximale ({hdFormat.ext})</div>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full">
+                      <a href={`/api/download-proxy?url=${encodeURIComponent(hdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video')}.${hdFormat.ext || 'mp4'}`} 
+                         download
+                         className="flex-grow group relative flex items-center justify-between p-4 bg-gradient-to-r from-purple-650 to-indigo-650 hover:from-purple-550 hover:to-indigo-550 rounded-2xl transition-all shadow-lg active:scale-[0.98]">
+                        <div className="flex items-center gap-4">
+                          <div className="bg-white/20 p-3 rounded-xl"><Download className="w-6 h-6 text-white" /></div>
+                          <div className="text-left">
+                            <div className="font-bold text-white text-lg">Télécharger Vidéo HD</div>
+                            <div className="text-white/70 text-sm">Qualité Maximale ({hdFormat.ext})</div>
+                          </div>
                         </div>
-                      </div>
-                    </a>
+                      </a>
+                      {result?.extractor === 'instagram' && (
+                        <a href={hdFormat.url} 
+                           target="_blank"
+                           rel="noreferrer"
+                           className="px-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-350 hover:text-white font-bold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                           title="Lien miroir en direct"
+                        >
+                          Lien Direct (Miroir)
+                        </a>
+                      )}
+                    </div>
                   )}
 
                   {/* Bouton SD (Only if not purely an image or multi-video post) */}

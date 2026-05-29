@@ -195,11 +195,6 @@ app.get(
         headers['Referer'] = referer;
       }
 
-      const finalFilename = filename || `media-${Date.now()}`;
-      // Noms de fichier sécurisés avec fallback ASCII et support complet de l'encodage UTF-8 (pour éviter les fichiers "download-proxy")
-      const safeAsciiFilename = finalFilename.replace(/[^a-zA-Z0-9._-]/g, '_');
-      reply.raw.setHeader('Content-Disposition', `attachment; filename="${safeAsciiFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`);
-
       // Fonction récursive interne pour gérer les redirections et streamer le flux sans buffering
       const executeProxy = (targetUrl: string): Promise<void> => {
         return new Promise((resolve, reject) => {
@@ -238,6 +233,11 @@ app.get(
               reject(new Error(`Le CDN d'origine a renvoyé une erreur ${res.statusCode} pour l'URL demandée.`));
               return;
             }
+
+            // Définir Content-Disposition seulement après le succès de la requête !
+            const finalFilename = filename || `media-${Date.now()}`;
+            const safeAsciiFilename = finalFilename.replace(/[^a-zA-Z0-9._-]/g, '_');
+            reply.raw.setHeader('Content-Disposition', `attachment; filename="${safeAsciiFilename}"; filename*=UTF-8''${encodeURIComponent(finalFilename)}`);
 
             // Copier les en-têtes essentiels du flux d'origine
             const contentType = res.headers['content-type'] || 'application/octet-stream';
