@@ -62,10 +62,12 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     // Vidéos (Avec video + audio mixé)
     const videoFormats = formats.filter((f: any) => f.vcodec !== 'none' && f.acodec !== 'none');
     
-    // HD: On privilégie les formats vidéo directs extraits, et on se replie sur result.url uniquement s'il n'y en a pas
+    // HD: On privilégie les formats vidéo directs extraits, et on se replie sur result.url uniquement s'il n'y en a pas et que ce n'est pas une page HTML
     hdFormat = videoFormats.length > 0
       ? videoFormats.reduce((prev: any, current: any) => (prev.height > current.height) ? prev : current, videoFormats[0])
-      : (result.url ? { url: result.url, format_note: "Qualité Max", ext: "mp4" } : null);
+      : (result.url && !result.url.includes('instagram.com') && !result.url.includes('youtube.com') && !result.url.includes('youtu.be') && !result.url.includes('facebook.com')
+         ? { url: result.url, format_note: "Qualité Max", ext: "mp4" } 
+         : null);
 
     // SD: Une qualité inférieure (ex: 480p ou 360p)
     sdFormat = videoFormats.find((f: any) => f.height && f.height <= 480) || 
