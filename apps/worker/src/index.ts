@@ -127,6 +127,10 @@ const worker = new Worker(
               const d = tikData.data;
               console.log(`[JOB ${job.id}] Succès TikWM API !`);
               
+              // On utilise le proxy de TikWM directement pour éviter les erreurs 403 du CDN de TikTok
+              const stableVideoUrl = `https://www.tikwm.com/video/media/play/${d.id}.mp4`;
+              const stableMusicUrl = `https://www.tikwm.com/video/music/${d.music_info?.id || d.id}.mp3`;
+
               output = {
                 id: d.id,
                 title: d.title || 'TikTok Video',
@@ -139,14 +143,14 @@ const worker = new Worker(
                 comment_count: d.comment_count,
                 uploader: d.author?.nickname || 'TikTok User',
                 formats: [],
-                url: d.play || d.wmplay,
+                url: stableVideoUrl,
                 ext: 'mp4',
                 images: d.images || []
               };
               
-              if (d.play) {
+              if (d.play || stableVideoUrl) {
                 output.formats.push({
-                  url: d.play,
+                  url: stableVideoUrl,
                   ext: 'mp4',
                   format_note: 'No Watermark HD',
                   vcodec: 'h264',
@@ -156,7 +160,7 @@ const worker = new Worker(
               }
               if (d.music) {
                 output.formats.push({
-                  url: d.music,
+                  url: stableMusicUrl,
                   ext: 'mp3',
                   format_note: 'Audio',
                   vcodec: 'none',
