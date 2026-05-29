@@ -26,6 +26,7 @@ COPY --from=builder /app/packages/database/package.json ./packages/database/
 RUN pnpm install --prod
 
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/scripts ./apps/api/scripts
 COPY --from=builder /app/packages/database ./packages/database
 
 WORKDIR /app/apps/api

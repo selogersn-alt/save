@@ -152,9 +152,24 @@ app.get('/api/posts', async (request, reply) => {
   return allPosts;
 });
 
+// Middleware de vérification JWT pour les routes protégées
+const verifyAdmin = async (request: fastify.FastifyRequest, reply: fastify.FastifyReply) => {
+  const authHeader = request.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return reply.status(401).send({ error: 'Unauthorized: Missing token' });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    await jose.jwtVerify(token, JWT_SECRET);
+  } catch (err) {
+    return reply.status(401).send({ error: 'Unauthorized: Invalid token' });
+  }
+};
+
 app.post(
   '/api/posts',
   {
+    preHandler: verifyAdmin,
     schema: {
       body: z.object({ title: z.string(), slug: z.string(), content: z.string(), metaDescription: z.string() })
     }
@@ -176,6 +191,7 @@ app.get('/api/settings', async (request, reply) => {
 app.post(
   '/api/settings',
   {
+    preHandler: verifyAdmin,
     schema: {
       body: z.object({ key: z.string(), value: z.string() })
     }

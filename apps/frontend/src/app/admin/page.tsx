@@ -1,18 +1,25 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Settings, Edit3, Save } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Settings, Edit3, Save, LogOut } from "lucide-react";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'ads' | 'blog'>('ads');
+  const [status, setStatus] = useState("");
+  const [post, setPost] = useState({ title: '', slug: '', content: '', metaDescription: '' });
   const [ads, setAds] = useState({
     ad_header_script: "",
     ad_popunder_script: "",
     ad_popup_script: "",
     ad_banner_html: ""
   });
+  const router = useRouter();
 
   useEffect(() => {
-    fetch(`/api/settings`)
+    // Vérification du cookie (le middleware protège déjà, mais on peut récupérer les données avec un fetch sécurisé)
+    const token = document.cookie.split('; ').find(row => row.startsWith('admin_token='))?.split('=')[1];
+    
+    fetch(`/api/settings`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => {
         setAds({
@@ -25,18 +32,23 @@ export default function AdminDashboard() {
       .catch(console.error);
   }, []);
 
+  const getHeaders = () => {
+    const token = document.cookie.split('; ').find(row => row.startsWith('admin_token='))?.split('=')[1];
+    return { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  };
+
   const saveAds = async () => {
     setStatus("Sauvegarde des publicités...");
-    
-    // Save each ad sequentially
     for (const [key, value] of Object.entries(ads)) {
       await fetch(`/api/settings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify({ key, value })
       });
     }
-    
     setStatus("Machine à publicités sauvegardée !");
   };
 
@@ -44,20 +56,30 @@ export default function AdminDashboard() {
     setStatus("Sauvegarde...");
     await fetch(`/api/posts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(post)
     });
     setStatus("Article publié !");
     setPost({ title: '', slug: '', content: '', metaDescription: '' });
   };
 
+  const handleLogout = () => {
+    document.cookie = "admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    router.push("/admin/login");
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white p-8">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 flex items-center gap-3">
-          <Settings className="w-8 h-8 text-purple-500" />
-          Panneau d'Administration
-        </h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Settings className="w-8 h-8 text-purple-500" />
+            Panneau d'Administration
+          </h1>
+          <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-medium transition-colors">
+            <LogOut className="w-4 h-4" /> Déconnexion
+          </button>
+        </div>
 
         <div className="flex gap-4 mb-8">
           <button 
