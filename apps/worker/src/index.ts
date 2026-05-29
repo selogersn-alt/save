@@ -22,7 +22,8 @@ const getExtractorOptions = (url: string, action: string, cookiesPath?: string) 
     dumpJson: true,
     noCheckCertificates: true,
     noWarnings: true,
-    ignoreErrors: true, // Ignorer les erreurs non critiques comme "no video formats found" pour les posts d'images
+    ignoreErrors: true, // Ignorer les erreurs non critiques
+    ignoreNoFormatsError: true, // IMPORTANT : Empêche yt-dlp de lever une erreur fatale s'il n'y a pas de vidéo (ex: posts d'images)
     addHeader: [
       'referer:google.com',
       'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
