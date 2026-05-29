@@ -3,7 +3,7 @@ import { Sparkles, Video, Music, Globe } from "lucide-react";
 
 async function getSettings() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:13001'}/api/settings`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.API_URL || 'http://api:3001'}/api/settings`, { cache: 'no-store' });
     if (!res.ok) return {};
     return res.json();
   } catch { return {}; }
@@ -11,7 +11,7 @@ async function getSettings() {
 
 async function getPosts() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:13001'}/api/posts`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.API_URL || 'http://api:3001'}/api/posts`, { cache: 'no-store' });
     if (!res.ok) return [];
     return res.json();
   } catch { return []; }
@@ -23,9 +23,9 @@ export default async function Home() {
 
   return (
     <main className="relative min-h-screen overflow-hidden flex flex-col items-center pt-20 px-4">
-      {/* AdBlock (Header) */}
-      {settings.header_ad && (
-        <div className="w-full max-w-4xl mx-auto mb-8 flex justify-center" dangerouslySetInnerHTML={{ __html: settings.header_ad }} />
+      {/* AdBlock (Banner HTML) */}
+      {settings.ad_banner_html && (
+        <div className="w-full max-w-4xl mx-auto mb-8 flex justify-center z-20" dangerouslySetInnerHTML={{ __html: settings.ad_banner_html }} />
       )}
 
       {/* Background Effects */}

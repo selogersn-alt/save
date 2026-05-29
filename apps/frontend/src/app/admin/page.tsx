@@ -4,35 +4,45 @@ import { Settings, Edit3, Save } from "lucide-react";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'ads' | 'blog'>('ads');
-  const [adCode, setAdCode] = useState("");
-  const [post, setPost] = useState({ title: '', slug: '', content: '', metaDescription: '' });
-  const [status, setStatus] = useState("");
+  const [ads, setAds] = useState({
+    ad_header_script: "",
+    ad_popunder_script: "",
+    ad_popup_script: "",
+    ad_banner_html: ""
+  });
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:13001';
-    fetch(`${apiUrl}/api/settings`)
+    fetch(`/api/settings`)
       .then(res => res.json())
       .then(data => {
-        if (data.header_ad) setAdCode(data.header_ad);
+        setAds({
+          ad_header_script: data.ad_header_script || "",
+          ad_popunder_script: data.ad_popunder_script || "",
+          ad_popup_script: data.ad_popup_script || "",
+          ad_banner_html: data.ad_banner_html || ""
+        });
       })
       .catch(console.error);
   }, []);
 
-  const saveAd = async () => {
-    setStatus("Sauvegarde...");
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:13001';
-    await fetch(`${apiUrl}/api/settings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'header_ad', value: adCode })
-    });
-    setStatus("Publicité sauvegardée !");
+  const saveAds = async () => {
+    setStatus("Sauvegarde des publicités...");
+    
+    // Save each ad sequentially
+    for (const [key, value] of Object.entries(ads)) {
+      await fetch(`/api/settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value })
+      });
+    }
+    
+    setStatus("Machine à publicités sauvegardée !");
   };
 
   const savePost = async () => {
     setStatus("Sauvegarde...");
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:13001';
-    await fetch(`${apiUrl}/api/posts`, {
+    await fetch(`/api/posts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(post)
@@ -54,7 +64,7 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('ads')}
             className={`px-6 py-3 rounded-xl font-bold ${activeTab === 'ads' ? 'bg-purple-600' : 'bg-slate-800'}`}
           >
-            Gestion des Publicités
+            Machine à Publicités
           </button>
           <button 
             onClick={() => setActiveTab('blog')}
@@ -67,16 +77,49 @@ export default function AdminDashboard() {
         {status && <div className="mb-6 p-4 bg-green-500/20 text-green-400 rounded-xl">{status}</div>}
 
         {activeTab === 'ads' && (
-          <div className="glass-card p-6 rounded-2xl bg-slate-900 border border-slate-800">
-            <h2 className="text-xl font-bold mb-4">Code Publicitaire (Header / Bannières)</h2>
-            <textarea 
-              className="w-full h-48 bg-slate-950 border border-slate-700 rounded-xl p-4 text-slate-300 font-mono"
-              placeholder="<!-- Insérez le script AdSense ou PropellerAds ici -->"
-              value={adCode}
-              onChange={(e) => setAdCode(e.target.value)}
-            />
-            <button onClick={saveAd} className="mt-4 bg-purple-600 px-6 py-3 rounded-xl font-bold flex items-center gap-2">
-              <Save className="w-5 h-5" /> Enregistrer les Pubs
+          <div className="glass-card p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-6">
+            <div>
+              <h2 className="text-xl font-bold mb-2">Scripts d'En-tête (Header / Meta)</h2>
+              <p className="text-sm text-slate-400 mb-2">Ex: Google AdSense Auto-ads, balises de vérification.</p>
+              <textarea 
+                className="w-full h-32 bg-slate-950 border border-slate-700 rounded-xl p-4 text-slate-300 font-mono"
+                value={ads.ad_header_script}
+                onChange={(e) => setAds({...ads, ad_header_script: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold mb-2">Pop-Under Scripts</h2>
+              <p className="text-sm text-slate-400 mb-2">Ex: Monetag, Adsterra popunders (S'ouvrent en arrière-plan).</p>
+              <textarea 
+                className="w-full h-32 bg-slate-950 border border-slate-700 rounded-xl p-4 text-slate-300 font-mono"
+                value={ads.ad_popunder_script}
+                onChange={(e) => setAds({...ads, ad_popunder_script: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold mb-2">Pop-Up / Interstitial Scripts</h2>
+              <p className="text-sm text-slate-400 mb-2">Ex: Scripts de recouvrement (Pop-up classique).</p>
+              <textarea 
+                className="w-full h-32 bg-slate-950 border border-slate-700 rounded-xl p-4 text-slate-300 font-mono"
+                value={ads.ad_popup_script}
+                onChange={(e) => setAds({...ads, ad_popup_script: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold mb-2">Bannière Principale (HTML)</h2>
+              <p className="text-sm text-slate-400 mb-2">Code HTML de la bannière affichée juste au-dessus du champ de téléchargement.</p>
+              <textarea 
+                className="w-full h-32 bg-slate-950 border border-slate-700 rounded-xl p-4 text-slate-300 font-mono"
+                value={ads.ad_banner_html}
+                onChange={(e) => setAds({...ads, ad_banner_html: e.target.value})}
+              />
+            </div>
+
+            <button onClick={saveAds} className="mt-4 bg-purple-600 px-6 py-3 rounded-xl font-bold flex items-center gap-2">
+              <Save className="w-5 h-5" /> Enregistrer la Machine à Pubs
             </button>
           </div>
         )}

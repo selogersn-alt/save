@@ -41,6 +41,9 @@ export const metadata: Metadata = {
   },
 };
 
+import Footer from "@/components/Footer";
+import AdManager from "@/components/AdManager";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -48,8 +51,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="dark">
-      <body className={`${inter.className} min-h-screen bg-slate-950 text-slate-50 selection:bg-purple-500/30`}>
-        {children}
+      <body className={`${inter.className} min-h-screen bg-slate-950 text-slate-50 selection:bg-purple-500/30 flex flex-col`}>
+        <AdManager />
+        <main className="flex-grow">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   );
