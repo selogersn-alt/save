@@ -1,4 +1,5 @@
 import fastify, { FastifyRequest, FastifyReply } from 'fastify';
+import { Readable } from 'stream';
 import cors from '@fastify/cors';
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
@@ -143,6 +144,57 @@ app.get(
       status: record.status,
       result: record.result
     };
+  }
+);
+
+// --- DOWNLOAD PROXY (BYPASSReferer/CORS 403 Forbidden) ---
+app.get(
+  '/api/download-proxy',
+  {
+    schema: {
+      querystring: z.object({
+        url: z.string().url(),
+        filename: z.string().optional()
+      })
+    }
+  },
+  async (request, reply) => {
+    const { url, filename } = request.query;
+    try {
+      request.log.info(`Proxying download from: ${url}`);
+      
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': '*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      if (!res.ok) {
+        return reply.status(res.status).send({ error: `Failed to fetch media from source CDN: ${res.statusText}` });
+      }
+
+      const contentType = res.headers.get('content-type') || 'application/octet-stream';
+      const finalFilename = filename || `media-${Date.now()}`;
+
+      reply.header('Content-Type', contentType);
+      reply.header('Content-Disposition', `attachment; filename="${encodeURIComponent(finalFilename)}"`);
+      
+      // Node 22 native fetch returns a Web ReadableStream.
+      // Drizzle/Fastify expects a Node Readable stream, which we convert here.
+      if (res.body) {
+        const nodeStream = Readable.fromWeb(res.body as any);
+        return reply.send(nodeStream);
+      } else {
+        return reply.status(500).send({ error: 'Response body is empty' });
+      }
+    } catch (err: any) {
+      request.log.error(err, 'Proxy download failed');
+      return reply.status(500).send({ error: `Proxy download server error: ${err.message}` });
+    }
   }
 );
 

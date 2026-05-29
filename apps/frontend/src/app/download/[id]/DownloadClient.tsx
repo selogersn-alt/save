@@ -49,6 +49,7 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
   let hdFormat: any = null;
   let sdFormat: any = null;
   let audioFormat: any = null;
+  let imageUrls: string[] = [];
 
   if (result) {
     const formats = result.formats || [];
@@ -67,6 +68,19 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     // SD: Une qualité inférieure (ex: 480p ou 360p)
     sdFormat = videoFormats.find((f: any) => f.height && f.height <= 480) || 
                videoFormats.find((f: any) => f.height && f.height < (hdFormat?.height || 720));
+
+    // Détection des images (Carrousels Instagram, Slides TikTok, etc.)
+    if (result.images && Array.isArray(result.images)) {
+      imageUrls = result.images;
+    } else if (result.entries && Array.isArray(result.entries)) {
+      imageUrls = result.entries
+        .map((entry: any) => entry.url || entry.thumbnail)
+        .filter((url: any) => url && typeof url === 'string');
+    } else if (result.url && typeof result.url === 'string' && (result.url.includes('.jpg') || result.url.includes('.png') || result.url.includes('.webp') || result.url.includes('.jpeg'))) {
+      imageUrls = [result.url];
+    } else if (result.extractor === 'instagram' && (!formats || formats.length === 0 || !formats.some((f: any) => f.vcodec !== 'none'))) {
+      if (result.url) imageUrls = [result.url];
+    }
   }
 
   return (
@@ -105,6 +119,10 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
               <div className="w-full lg:w-1/3 shrink-0">
                 <img src={result.thumbnail} alt="Thumbnail" className="w-full aspect-video lg:aspect-[4/5] rounded-2xl object-cover shadow-2xl border border-slate-800" />
               </div>
+            ) : imageUrls.length > 0 ? (
+              <div className="w-full lg:w-1/3 shrink-0">
+                <img src={imageUrls[0]} alt="Thumbnail Image" className="w-full aspect-video lg:aspect-[4/5] rounded-2xl object-cover shadow-2xl border border-slate-800" />
+              </div>
             ) : (
               <div className="w-full lg:w-1/3 aspect-video bg-slate-800 rounded-2xl flex items-center justify-center shrink-0">
                 <Video className="w-12 h-12 text-slate-600" />
@@ -114,14 +132,43 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
             {/* Infos et Boutons */}
             <div className="flex-1 space-y-6 w-full">
               <div>
-                <h1 className="text-3xl font-extrabold line-clamp-2 text-white mb-2">{result?.title || "Vidéo Prête !"}</h1>
+                <h1 className="text-3xl font-extrabold line-clamp-2 text-white mb-2">{result?.title || "Média Prêt !"}</h1>
                 <p className="text-slate-400 font-medium">Source: <span className="capitalize">{result?.extractor}</span> {result?.duration_string ? `• Durée: ${result.duration_string}` : ""}</p>
               </div>
               
               <div className="space-y-4 pt-4">
-                {/* Bouton HD */}
-                {hdFormat && (
-                  <a href={hdFormat.url} target="_blank" rel="noreferrer" 
+                {/* Images Download Gallery (TikTok Slides or Instagram Carousels) */}
+                {imageUrls.length > 0 && (
+                  <div className="space-y-4 pt-2">
+                    <h3 className="text-xl font-bold text-white mb-2">Télécharger les Images HD</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {imageUrls.map((imgUrl, index) => (
+                        <div key={index} className="relative group rounded-2xl overflow-hidden border border-slate-850 bg-slate-900/50 aspect-square flex flex-col justify-between p-3">
+                          <img src={imgUrl} alt={`Slide ${index + 1}`} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-60" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+                          
+                          <span className="z-10 bg-slate-950/70 backdrop-blur-md px-2 py-0.5 rounded-lg text-xs font-semibold text-white w-max">
+                            Image {index + 1}
+                          </span>
+                          
+                          <a 
+                            href={`/api/download-proxy?url=${encodeURIComponent(imgUrl)}&filename=${encodeURIComponent(result?.title || 'image')}-${index + 1}.jpg`}
+                            download
+                            className="z-10 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-purple-500/20 active:scale-95"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            Télécharger
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bouton HD (Only if not purely an image post) */}
+                {hdFormat && !imageUrls.length && (
+                  <a href={`/api/download-proxy?url=${encodeURIComponent(hdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video')}.${hdFormat.ext || 'mp4'}`} 
+                     download
                      className="w-full group relative flex items-center justify-between p-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl transition-all shadow-lg hover:shadow-purple-500/25 active:scale-[0.98]">
                     <div className="flex items-center gap-4">
                       <div className="bg-white/20 p-3 rounded-xl"><Download className="w-6 h-6 text-white" /></div>
@@ -133,9 +180,10 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                   </a>
                 )}
 
-                {/* Bouton SD */}
-                {sdFormat && sdFormat.url !== hdFormat?.url && (
-                  <a href={sdFormat.url} target="_blank" rel="noreferrer" 
+                {/* Bouton SD (Only if not purely an image post) */}
+                {sdFormat && sdFormat.url !== hdFormat?.url && !imageUrls.length && (
+                  <a href={`/api/download-proxy?url=${encodeURIComponent(sdFormat.url)}&filename=${encodeURIComponent(result?.title || 'video-sd')}.${sdFormat.ext || 'mp4'}`}
+                     download
                      className="w-full group relative flex items-center justify-between p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all active:scale-[0.98]">
                     <div className="flex items-center gap-4">
                       <div className="bg-slate-900 p-3 rounded-xl"><Video className="w-6 h-6 text-slate-300" /></div>
@@ -147,9 +195,10 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
                   </a>
                 )}
 
-                {/* Bouton Audio */}
-                {audioFormat && (
-                  <a href={audioFormat.url} target="_blank" rel="noreferrer" 
+                {/* Bouton Audio (Only if not purely an image post) */}
+                {audioFormat && !imageUrls.length && (
+                  <a href={`/api/download-proxy?url=${encodeURIComponent(audioFormat.url)}&filename=${encodeURIComponent(result?.title || 'audio')}.${audioFormat.ext || 'mp3'}`}
+                     download
                      className="w-full group relative flex items-center justify-between p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all active:scale-[0.98]">
                     <div className="flex items-center gap-4">
                       <div className="bg-slate-900 p-3 rounded-xl"><Music className="w-6 h-6 text-slate-300" /></div>
@@ -163,7 +212,7 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
               </div>
               
               <p className="text-xs text-slate-500 text-center mt-6">
-                En téléchargeant cette vidéo, vous acceptez nos conditions d'utilisation. Réservé à un usage personnel.
+                En téléchargeant ce média, vous acceptez nos conditions d'utilisation. Réservé à un usage personnel.
               </p>
             </div>
           </div>
