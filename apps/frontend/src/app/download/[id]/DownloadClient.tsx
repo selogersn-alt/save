@@ -61,7 +61,11 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     if (!audioFormat && formats.length > 0) audioFormat = formats[0]; // fallback
     
     // Vidéos (On cherche une dimension ou une extension mp4 sans vcodec explicite 'none')
-    const videoFormats = formats.filter((f: any) => (f.height > 0 || f.width > 0) || (f.ext === 'mp4' && f.vcodec !== 'none'));
+    let videoFormats = formats.filter((f: any) => (f.height > 0 || f.width > 0) || (f.ext === 'mp4' && f.vcodec !== 'none'));
+    const videoFormatsWithAudio = videoFormats.filter((f: any) => f.acodec !== 'none');
+    if (videoFormatsWithAudio.length > 0) {
+      videoFormats = videoFormatsWithAudio; // Prioriser les vidéos avec du son !
+    }
     
     // HD: On privilégie les formats vidéo directs extraits
     hdFormat = videoFormats.length > 0
@@ -90,7 +94,10 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
         if (isVideo) {
           let videoUrl = entry.url;
           if (entry.formats && entry.formats.length > 0) {
-            const entryVideoFormats = entry.formats.filter((f: any) => (f.height > 0 || f.width > 0) || (f.ext === 'mp4' && f.vcodec !== 'none'));
+            let entryVideoFormats = entry.formats.filter((f: any) => (f.height > 0 || f.width > 0) || (f.ext === 'mp4' && f.vcodec !== 'none'));
+            const entryVideoFormatsWithAudio = entryVideoFormats.filter((f: any) => f.acodec !== 'none');
+            if (entryVideoFormatsWithAudio.length > 0) entryVideoFormats = entryVideoFormatsWithAudio; // Son prioritaire
+            
             if (entryVideoFormats.length > 0) {
               const bestFormat = entryVideoFormats.reduce((prev: any, current: any) => ((prev.height || 0) > (current.height || 0)) ? prev : current, entryVideoFormats[0]);
               videoUrl = bestFormat.url || videoUrl;

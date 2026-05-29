@@ -93,13 +93,43 @@ const worker = new Worker(
             if (jsonStartIndex !== -1) {
               output = JSON.parse(stdoutStr.substring(jsonStartIndex));
               console.log(`[JOB ${job.id}] JSON récupéré avec succès depuis la sortie d'erreur (contournement image Instagram).`);
-            } else {
-              throw new Error("No JSON object found in stdout");
             }
           } catch (parseErr) {
-            throw new Error(`Erreur critique yt-dlp: ${dlErr.message || dlErr.stderr || 'Inconnue'}`);
+            console.log(`[JOB ${job.id}] Impossible de parser le JSON depuis stdout.`);
           }
-        } else {
+        }
+        
+        // FALLBACK D'URGENCE POUR INSTAGRAM (Si yt-dlp échoue totalement à cause d'un blocage IP/Login)
+        if (!output && url.includes('instagram.com/p/')) {
+          console.log(`[JOB ${job.id}] Tentative de Fallback d'urgence via Instagram Embed...`);
+          try {
+            const shortcodeMatch = url.match(/\/p\/([a-zA-Z0-9_-]+)/);
+            if (shortcodeMatch) {
+              const embedUrl = `https://www.instagram.com/p/${shortcodeMatch[1]}/embed/captioned/`;
+              const res = await fetch(embedUrl);
+              if (res.ok) {
+                const html = await res.text();
+                // Chercher l'image principale de l'embed
+                const imgMatch = html.match(/class="EmbeddedMediaImage"[^>]+src="([^"]+)"/);
+                if (imgMatch && imgMatch[1]) {
+                  const decodedUrl = imgMatch[1].replace(/&amp;/g, '&');
+                  output = {
+                    extractor: 'instagram',
+                    title: `Post Instagram ${shortcodeMatch[1]}`,
+                    url: decodedUrl,
+                    thumbnail: decodedUrl,
+                    original_url: url
+                  };
+                  console.log(`[JOB ${job.id}] Fallback Instagram Embed réussi ! Image extraite.`);
+                }
+              }
+            }
+          } catch(fallbackErr) {
+            console.error(`[JOB ${job.id}] Fallback Instagram a également échoué:`, fallbackErr);
+          }
+        }
+
+        if (!output) {
           throw new Error(`Erreur d'extraction yt-dlp: ${dlErr.message || dlErr.stderr || 'Inconnue'}`);
         }
       }
