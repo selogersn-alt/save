@@ -160,6 +160,9 @@ app.get(
   },
   async (request, reply) => {
     const { url, filename } = request.query;
+    // Empêcher le navigateur de transmettre le referer de notre site lors d'une redirection,
+    // ce qui évite les blocages "Access Denied" (403) par des CDN comme Akamai (TikTok, etc.)
+    reply.header('Referrer-Policy', 'no-referrer');
     try {
       request.log.info(`Proxying download from: ${url}`);
       
