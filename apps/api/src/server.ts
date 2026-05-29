@@ -1,4 +1,4 @@
-import fastify from 'fastify';
+import fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
@@ -153,7 +153,7 @@ app.get('/api/posts', async (request, reply) => {
 });
 
 // Middleware de vérification JWT pour les routes protégées
-const verifyAdmin = async (request: fastify.FastifyRequest, reply: fastify.FastifyReply) => {
+const verifyAdmin = async (request: FastifyRequest, reply: FastifyReply) => {
   const authHeader = request.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return reply.status(401).send({ error: 'Unauthorized: Missing token' });
