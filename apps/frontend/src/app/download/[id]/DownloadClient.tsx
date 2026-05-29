@@ -141,7 +141,7 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
     // HD: On privilégie les formats vidéo directs extraits
     hdFormat = videoFormats.length > 0
       ? videoFormats.reduce((prev: any, current: any) => ((prev.height || 0) > (current.height || 0)) ? prev : current, videoFormats[0])
-      : (result.url && !result.url.includes('instagram.com') && !result.url.includes('youtube.com') && !result.url.includes('youtu.be') && !result.url.includes('facebook.com')
+      : (result.url && !result.url.includes('instagram.com') && !result.url.includes('facebook.com')
          ? { url: result.url, format_note: "Qualité Max", ext: "mp4" } 
          : null);
 

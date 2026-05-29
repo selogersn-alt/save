@@ -44,8 +44,6 @@ const getExtractorOptions = (url: string, action: string, cookiesPath?: string) 
       baseOptions.writeAutoSub = true;
       baseOptions.subLang = 'en,fr';
       baseOptions.skipDownload = true; // On veut juste le JSON et les sous-titres
-    } else {
-      baseOptions.format = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
     }
   }
 
@@ -118,6 +116,61 @@ const worker = new Worker(
           }
         }
         
+        // FALLBACK / PRIMARY POUR TIKTOK VIA TIKWM API (Sans filigrane, liens stables)
+        if (!output && (url.includes('tiktok.com') || url.includes('tiktokv.com'))) {
+          console.log(`[JOB ${job.id}] Utilisation de TikWM API pour TikTok...`);
+          try {
+            const tikRes = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
+            const tikData = await tikRes.json();
+            
+            if (tikData && tikData.code === 0 && tikData.data) {
+              const d = tikData.data;
+              console.log(`[JOB ${job.id}] Succès TikWM API !`);
+              
+              output = {
+                id: d.id,
+                title: d.title || 'TikTok Video',
+                extractor: 'tiktok',
+                original_url: url,
+                thumbnail: d.cover,
+                duration: d.duration,
+                view_count: d.play_count,
+                like_count: d.digg_count,
+                comment_count: d.comment_count,
+                uploader: d.author?.nickname || 'TikTok User',
+                formats: [],
+                url: d.play || d.wmplay,
+                ext: 'mp4',
+                images: d.images || []
+              };
+              
+              if (d.play) {
+                output.formats.push({
+                  url: d.play,
+                  ext: 'mp4',
+                  format_note: 'No Watermark HD',
+                  vcodec: 'h264',
+                  acodec: 'aac',
+                  height: 1080
+                });
+              }
+              if (d.music) {
+                output.formats.push({
+                  url: d.music,
+                  ext: 'mp3',
+                  format_note: 'Audio',
+                  vcodec: 'none',
+                  acodec: 'mp3'
+                });
+              }
+            } else {
+              throw new Error("TikWM API a renvoyé une erreur: " + tikData?.msg);
+            }
+          } catch (err) {
+            console.log(`[JOB ${job.id}] Échec TikWM API, on continue avec yt-dlp...`, err);
+          }
+        }
+
         // FALLBACK D'URGENCE ANTI-BLOCAGE IP POUR INSTAGRAM (Via APIs Tierces Cobalt Multiples)
         if (!output && (url.includes('instagram.com/p/') || url.includes('instagram.com/reel/'))) {
           console.log(`[JOB ${job.id}] Blocage IP détecté. Tentative de Fallback via instances Cobalt...`);
