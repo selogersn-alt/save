@@ -31,7 +31,78 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
         if (data.status === "completed") {
           setResult(data.result);
         } else if (data.status === "failed") {
-          setError(data.result?.error || "L'extraction a échoué.");
+          let fallbackSuccess = false;
+          // TENTATIVE DE FALLBACK CÔTÉ CLIENT (FRONTEND) POUR CONTOURNER LE BLOCAGE IP DU SERVEUR
+          const lastUrl = typeof window !== 'undefined' ? localStorage.getItem(`last_url_${id}`) : null;
+          if (lastUrl && (lastUrl.includes('instagram.com/p/') || lastUrl.includes('instagram.com/reel/'))) {
+            try {
+              setStatus("processing"); // Remettre en traitement pour l'UI
+              const cobaltInstances = [
+                'https://co.wuk.sh/api/json',
+                'https://cobalt.q-n.space/api/json',
+                'https://api.cobalt.lol/api/json',
+                'https://api.cobalt.tools/api/json'
+              ];
+              
+              for (const instance of cobaltInstances) {
+                try {
+                  const cobaltRes = await fetch(instance, {
+                    method: 'POST',
+                    headers: {
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: lastUrl })
+                  });
+                  
+                  if (cobaltRes.ok) {
+                    const cobaltData = await cobaltRes.json();
+                    let finalResult: any = null;
+                    
+                    if (cobaltData.picker && Array.isArray(cobaltData.picker)) {
+                      const carouselEntries = cobaltData.picker.map((item: any, idx: number) => ({
+                        id: String(idx),
+                        title: `Slide ${idx + 1}`,
+                        url: item.url,
+                        thumbnail: item.thumb || item.url,
+                        ext: item.type === 'video' ? 'mp4' : 'jpg',
+                        vcodec: item.type === 'video' ? 'h264' : 'none',
+                        formats: []
+                      }));
+                      finalResult = {
+                        extractor: 'instagram',
+                        title: `Post Instagram`,
+                        url: carouselEntries[0].url,
+                        thumbnail: carouselEntries[0].thumbnail,
+                        original_url: lastUrl,
+                        entries: carouselEntries
+                      };
+                    } else if (cobaltData.url) {
+                      finalResult = {
+                        extractor: 'instagram',
+                        title: `Post Instagram`,
+                        url: cobaltData.url,
+                        thumbnail: cobaltData.url,
+                        original_url: lastUrl
+                      };
+                    }
+                    
+                    if (finalResult) {
+                      setResult(finalResult);
+                      setStatus("completed");
+                      fallbackSuccess = true;
+                      break;
+                    }
+                  }
+                } catch(e) { /* ignore this instance failure */ }
+              }
+            } catch(e) { }
+          }
+          
+          if (!fallbackSuccess) {
+            setStatus("failed");
+            setError(data.result?.error || "L'extraction a échoué.");
+          }
         } else {
           timeoutId = setTimeout(poll, 2000); // continue polling
         }

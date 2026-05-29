@@ -45,6 +45,11 @@ export default function DownloaderForm({ platform = "all" }: DownloaderFormProps
       }
       const data = await res.json();
       
+      // Sauvegarder l'URL dans le localStorage pour le client-side fallback d'urgence
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`last_url_${data.id}`, url);
+      }
+
       // Redirect to the dedicated download page
       router.push(`/download/${data.id}`);
       
