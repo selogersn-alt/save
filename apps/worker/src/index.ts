@@ -99,63 +99,66 @@ const worker = new Worker(
           }
         }
         
-        // FALLBACK D'URGENCE COMPLET POUR INSTAGRAM (Si yt-dlp échoue)
+        // FALLBACK D'URGENCE ANTI-BLOCAGE IP POUR INSTAGRAM (Via API Tierce Cobalt)
         if (!output && (url.includes('instagram.com/p/') || url.includes('instagram.com/reel/'))) {
-          console.log(`[JOB ${job.id}] Tentative de Fallback d'urgence via API publique Instagram...`);
+          console.log(`[JOB ${job.id}] Blocage IP détecté. Tentative de Fallback via API Cobalt...`);
           try {
-            const shortcodeMatch = url.match(/(?:p|reel)\/([a-zA-Z0-9_-]+)/);
-            if (shortcodeMatch) {
-              const shortcode = shortcodeMatch[1];
-              // On utilise l'API graphql publique pour récupérer les données du post sans yt-dlp
-              const gqlUrl = `https://www.instagram.com/graphql/query/?query_hash=b3055c01b4b222b8a47dc12b090e4e64&variables={"shortcode":"${shortcode}"}`;
-              const res = await fetch(gqlUrl, {
-                headers: {
-                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                }
-              });
+            const cobaltRes = await fetch('https://api.cobalt.tools/api/json', {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+              },
+              body: JSON.stringify({ url: url })
+            });
+            
+            if (cobaltRes.ok) {
+              const cobaltData = await cobaltRes.json();
+              console.log(`[JOB ${job.id}] Réponse Cobalt reçue:`, cobaltData.status);
               
-              if (res.ok) {
-                const data = await res.json();
-                const media = data?.data?.shortcode_media;
-                if (media) {
-                  let carouselEntries: any[] = [];
-                  
-                  // Gestion des carrousels
-                  if (media.edge_sidecar_to_children && media.edge_sidecar_to_children.edges) {
-                    carouselEntries = media.edge_sidecar_to_children.edges.map((edge: any, index: number) => {
-                      const node = edge.node;
-                      return {
-                        id: node.id || String(index),
-                        title: `Slide ${index + 1}`,
-                        url: node.is_video ? node.video_url : node.display_url,
-                        thumbnail: node.display_url,
-                        ext: node.is_video ? 'mp4' : 'jpg',
-                        vcodec: node.is_video ? 'h264' : 'none',
-                        formats: [] 
-                      };
-                    });
-                  }
-
-                  output = {
-                    extractor: 'instagram',
-                    title: media.edge_media_to_caption?.edges[0]?.node?.text || `Post Instagram ${shortcode}`,
-                    url: media.is_video ? media.video_url : media.display_url,
-                    thumbnail: media.display_url,
-                    original_url: url,
-                    entries: carouselEntries.length > 0 ? carouselEntries : undefined
-                  };
-                  console.log(`[JOB ${job.id}] Fallback GraphQL Instagram réussi !`);
-                }
+              if (cobaltData.picker && Array.isArray(cobaltData.picker)) {
+                // C'est un carrousel
+                const carouselEntries = cobaltData.picker.map((item: any, idx: number) => ({
+                  id: String(idx),
+                  title: `Slide ${idx + 1}`,
+                  url: item.url,
+                  thumbnail: item.thumb || item.url,
+                  ext: item.type === 'video' ? 'mp4' : 'jpg',
+                  vcodec: item.type === 'video' ? 'h264' : 'none',
+                  formats: []
+                }));
+                output = {
+                  extractor: 'instagram',
+                  title: `Post Instagram`,
+                  url: carouselEntries[0].url,
+                  thumbnail: carouselEntries[0].thumbnail,
+                  original_url: url,
+                  entries: carouselEntries
+                };
+                console.log(`[JOB ${job.id}] Fallback Cobalt réussi (Carrousel) !`);
+              } else if (cobaltData.url) {
+                // C'est un média unique
+                output = {
+                  extractor: 'instagram',
+                  title: `Post Instagram`,
+                  url: cobaltData.url,
+                  thumbnail: cobaltData.url,
+                  original_url: url
+                };
+                console.log(`[JOB ${job.id}] Fallback Cobalt réussi (Média unique) !`);
               }
+            } else {
+               console.log(`[JOB ${job.id}] Cobalt API a renvoyé une erreur HTTP ${cobaltRes.status}`);
             }
           } catch(fallbackErr) {
-            console.error(`[JOB ${job.id}] Fallback Instagram GraphQL a également échoué:`, fallbackErr);
+            console.error(`[JOB ${job.id}] Fallback Cobalt a également échoué:`, fallbackErr);
           }
         }
 
         if (!output) {
           const errDump = dlErr ? (dlErr.shortMessage || dlErr.message || String(dlErr)) : "Inconnue";
-          throw new Error(`Erreur critique: ${errDump}`);
+          throw new Error(`Erreur critique: ${errDump}. (L'IP du serveur est bloquée par Instagram)`);
         }
       }
 
