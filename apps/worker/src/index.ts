@@ -39,11 +39,6 @@ const getExtractorOptions = (url: string, action: string, cookiesPath?: string) 
     baseOptions.extractorArgs = 'tiktok:api_hostname=api16-normal-c-useast1a.tiktokv.com';
   }
 
-  if (url.includes('instagram.com')) {
-    // Empêcher yt-dlp de chercher absolument une vidéo sur les posts d'images Instagram
-    baseOptions.format = 'all';
-  }
-
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     if (action === 'summary') {
       baseOptions.writeAutoSub = true;
@@ -93,8 +88,14 @@ const worker = new Worker(
         // en disant "No video formats found!", mais il réussit quand même à afficher le JSON contenant l'URL de l'image !
         if (dlErr.stdout) {
           try {
-            output = JSON.parse(dlErr.stdout);
-            console.log(`[JOB ${job.id}] JSON récupéré avec succès depuis la sortie d'erreur (contournement image Instagram).`);
+            const stdoutStr = String(dlErr.stdout);
+            const jsonStartIndex = stdoutStr.indexOf('{');
+            if (jsonStartIndex !== -1) {
+              output = JSON.parse(stdoutStr.substring(jsonStartIndex));
+              console.log(`[JOB ${job.id}] JSON récupéré avec succès depuis la sortie d'erreur (contournement image Instagram).`);
+            } else {
+              throw new Error("No JSON object found in stdout");
+            }
           } catch (parseErr) {
             throw new Error(`Erreur critique yt-dlp: ${dlErr.message || dlErr.stderr || 'Inconnue'}`);
           }
