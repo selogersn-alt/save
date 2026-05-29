@@ -118,66 +118,76 @@ const worker = new Worker(
           }
         }
         
-        // FALLBACK D'URGENCE ANTI-BLOCAGE IP POUR INSTAGRAM (Via API Tierce Cobalt)
+        // FALLBACK D'URGENCE ANTI-BLOCAGE IP POUR INSTAGRAM (Via APIs Tierces Cobalt Multiples)
         if (!output && (url.includes('instagram.com/p/') || url.includes('instagram.com/reel/'))) {
-          console.log(`[JOB ${job.id}] Blocage IP détecté. Tentative de Fallback via API Cobalt...`);
-          try {
-            const cobaltRes = await fetch('https://api.cobalt.tools/api/json', {
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-              },
-              body: JSON.stringify({ url: url })
-            });
-            
-            if (cobaltRes.ok) {
-              const cobaltData = await cobaltRes.json();
-              console.log(`[JOB ${job.id}] Réponse Cobalt reçue:`, cobaltData.status);
+          console.log(`[JOB ${job.id}] Blocage IP détecté. Tentative de Fallback via instances Cobalt...`);
+          
+          const cobaltInstances = [
+            'https://co.wuk.sh/api/json',
+            'https://cobalt.q-n.space/api/json',
+            'https://api.cobalt.lol/api/json',
+            'https://api.cobalt.tools/api/json'
+          ];
+
+          for (const instance of cobaltInstances) {
+            try {
+              console.log(`[JOB ${job.id}] Essai avec l'instance Cobalt: ${instance}`);
+              const cobaltRes = await fetch(instance, {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                body: JSON.stringify({ url: url })
+              });
               
-              if (cobaltData.picker && Array.isArray(cobaltData.picker)) {
-                // C'est un carrousel
-                const carouselEntries = cobaltData.picker.map((item: any, idx: number) => ({
-                  id: String(idx),
-                  title: `Slide ${idx + 1}`,
-                  url: item.url,
-                  thumbnail: item.thumb || item.url,
-                  ext: item.type === 'video' ? 'mp4' : 'jpg',
-                  vcodec: item.type === 'video' ? 'h264' : 'none',
-                  formats: []
-                }));
-                output = {
-                  extractor: 'instagram',
-                  title: `Post Instagram`,
-                  url: carouselEntries[0].url,
-                  thumbnail: carouselEntries[0].thumbnail,
-                  original_url: url,
-                  entries: carouselEntries
-                };
-                console.log(`[JOB ${job.id}] Fallback Cobalt réussi (Carrousel) !`);
-              } else if (cobaltData.url) {
-                // C'est un média unique
-                output = {
-                  extractor: 'instagram',
-                  title: `Post Instagram`,
-                  url: cobaltData.url,
-                  thumbnail: cobaltData.url,
-                  original_url: url
-                };
-                console.log(`[JOB ${job.id}] Fallback Cobalt réussi (Média unique) !`);
+              if (cobaltRes.ok) {
+                const cobaltData = await cobaltRes.json();
+                
+                if (cobaltData.picker && Array.isArray(cobaltData.picker)) {
+                  // C'est un carrousel
+                  const carouselEntries = cobaltData.picker.map((item: any, idx: number) => ({
+                    id: String(idx),
+                    title: `Slide ${idx + 1}`,
+                    url: item.url,
+                    thumbnail: item.thumb || item.url,
+                    ext: item.type === 'video' ? 'mp4' : 'jpg',
+                    vcodec: item.type === 'video' ? 'h264' : 'none',
+                    formats: []
+                  }));
+                  output = {
+                    extractor: 'instagram',
+                    title: `Post Instagram`,
+                    url: carouselEntries[0].url,
+                    thumbnail: carouselEntries[0].thumbnail,
+                    original_url: url,
+                    entries: carouselEntries
+                  };
+                  console.log(`[JOB ${job.id}] Fallback Cobalt réussi (Carrousel) via ${instance}!`);
+                  break; // Succès, on sort de la boucle
+                } else if (cobaltData.url) {
+                  // C'est un média unique
+                  output = {
+                    extractor: 'instagram',
+                    title: `Post Instagram`,
+                    url: cobaltData.url,
+                    thumbnail: cobaltData.url,
+                    original_url: url
+                  };
+                  console.log(`[JOB ${job.id}] Fallback Cobalt réussi (Média unique) via ${instance}!`);
+                  break; // Succès, on sort de la boucle
+                }
               }
-            } else {
-               console.log(`[JOB ${job.id}] Cobalt API a renvoyé une erreur HTTP ${cobaltRes.status}`);
+            } catch(fallbackErr) {
+              console.error(`[JOB ${job.id}] Échec avec ${instance}`);
             }
-          } catch(fallbackErr) {
-            console.error(`[JOB ${job.id}] Fallback Cobalt a également échoué:`, fallbackErr);
           }
         }
 
         if (!output) {
           const errDump = dlErr ? (dlErr.shortMessage || dlErr.message || String(dlErr)) : "Inconnue";
-          throw new Error(`Erreur critique: ${errDump}. (L'IP du serveur est bloquée par Instagram)`);
+          throw new Error(`Erreur critique: ${errDump}. (L'IP du serveur est bloquée par Instagram ET les serveurs de secours ont échoué)`);
         }
       }
 
