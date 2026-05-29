@@ -68,7 +68,7 @@ const worker = new Worker(
         const settingsMap = settingsRecords.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
         let cookiesStr = settingsMap.instagram_cookies || '';
         if (cookiesStr && cookiesStr.trim() !== '') {
-          cookiesPath = path.join(os.tmpdir(), `insta_cookies_${job.id}.txt`);
+          cookiesPath = `/tmp/insta_cookies_${job.id}.txt`;
           
           if (!cookiesStr.includes('# Netscape HTTP Cookie File')) {
              console.log(`[JOB ${job.id}] Conversion des cookies bruts en format Netscape...`);
@@ -86,9 +86,9 @@ const worker = new Worker(
                    }
                 }
              }
-             fs.writeFileSync(cookiesPath, netscapeContent);
+             fs.writeFileSync(cookiesPath as string, netscapeContent);
           } else {
-             fs.writeFileSync(cookiesPath, cookiesStr);
+             fs.writeFileSync(cookiesPath as string, cookiesStr);
           }
           
           console.log(`[JOB ${job.id}] Fichier cookies d'authentification généré avec succès.`);
