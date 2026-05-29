@@ -24,6 +24,7 @@ const getExtractorOptions = (url: string, action: string, cookiesPath?: string) 
     noWarnings: true,
     ignoreErrors: true, // Ignorer les erreurs non critiques
     ignoreNoFormatsError: true, // IMPORTANT : Empêche yt-dlp de lever une erreur fatale s'il n'y a pas de vidéo (ex: posts d'images)
+    forceIpv4: true, // IMPORTANT : Force la liaison IP sur IPv4 pour correspondre parfaitement au proxy API Node
     addHeader: [
       'referer:google.com',
       'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'

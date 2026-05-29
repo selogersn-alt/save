@@ -203,13 +203,20 @@ app.get(
       // Fonction récursive interne pour gérer les redirections et streamer le flux sans buffering
       const executeProxy = (targetUrl: string): Promise<void> => {
         return new Promise((resolve, reject) => {
-          const parsed = parseUrl(targetUrl);
-          const protocol = parsed.protocol === 'https:' ? https : http;
+          let urlObj: URL;
+          try {
+            urlObj = new URL(targetUrl);
+          } catch (err) {
+            reject(new Error(`URL d'origine invalide: ${targetUrl}`));
+            return;
+          }
+
+          const protocol = urlObj.protocol === 'https:' ? https : http;
           
           const options = {
-            hostname: parsed.hostname,
-            port: parsed.port ? parseInt(parsed.port, 10) : undefined,
-            path: parsed.path,
+            hostname: urlObj.hostname,
+            port: urlObj.port ? parseInt(urlObj.port, 10) : undefined,
+            path: urlObj.pathname + urlObj.search,
             method: 'GET',
             headers: headers,
             rejectUnauthorized: false
@@ -220,12 +227,15 @@ app.get(
             if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
               const redirectUrl = res.headers.location;
               request.log.info(`Redirecting proxy to: ${redirectUrl}`);
-              resolve(executeProxy(redirectUrl));
+              
+              // Résoudre l'URL absolue ou relative de redirection par rapport à l'URL courante
+              const absoluteRedirectUrl = new URL(redirectUrl, targetUrl).toString();
+              resolve(executeProxy(absoluteRedirectUrl));
               return;
             }
 
             if (res.statusCode && res.statusCode >= 400) {
-              reject(new Error(`Target CDN responded with status ${res.statusCode}`));
+              reject(new Error(`Le CDN d'origine a renvoyé une erreur ${res.statusCode} pour l'URL demandée.`));
               return;
             }
 
@@ -265,12 +275,12 @@ app.get(
 
       await executeProxy(url);
     } catch (err: any) {
-      request.log.error(err, 'Proxy download failed. Redirecting as fallback.');
-      try {
-        return reply.redirect(url);
-      } catch {
-        return reply.status(500).send({ error: `Proxy download server error: ${err.message}` });
-      }
+      request.log.error(err, 'Proxy download failed.');
+      return reply.status(500).send({
+        error: "Le serveur de téléchargement n'a pas pu récupérer ce fichier média.",
+        message: err.message,
+        url: url
+      });
     }
   }
 );
