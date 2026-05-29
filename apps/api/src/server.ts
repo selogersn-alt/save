@@ -95,7 +95,7 @@ app.post(
     schema: {
       body: z.object({ 
         url: z.string().url(),
-        action: z.enum(['video', 'audio', 'summary', 'auto']).optional().default('auto')
+        action: z.enum(['video', 'audio', 'summary', 'auto', 'image']).optional().default('auto')
       }),
       response: {
         200: z.object({ id: z.string(), message: z.string() })
