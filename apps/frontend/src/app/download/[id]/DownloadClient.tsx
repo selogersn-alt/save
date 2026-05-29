@@ -82,16 +82,19 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
 
     if (result.entries && Array.isArray(result.entries) && !isProfileOrPlaylist) {
       result.entries.forEach((entry: any) => {
-        const hasVideo = (entry.formats && entry.formats.some((f: any) => f.vcodec !== 'none')) ||
-                         (entry.vcodec && entry.vcodec !== 'none') ||
-                         (entry.url && entry.url.includes('.mp4')) ||
-                         (entry.ext === 'mp4');
+        // Détection robuste d'une vidéo dans une entrée de carrousel
+        const isVideo = (entry.formats && entry.formats.some((f: any) => (f.height > 0 || f.width > 0) || (f.ext === 'mp4' && f.vcodec !== 'none'))) ||
+                        (entry.ext === 'mp4' && entry.vcodec !== 'none') ||
+                        (entry.url && entry.url.includes('.mp4'));
                          
-        if (hasVideo) {
+        if (isVideo) {
           let videoUrl = entry.url;
           if (entry.formats && entry.formats.length > 0) {
-            const bestFormat = entry.formats.reduce((prev: any, current: any) => (prev.height > current.height) ? prev : current, entry.formats[0]);
-            videoUrl = bestFormat.url || videoUrl;
+            const entryVideoFormats = entry.formats.filter((f: any) => (f.height > 0 || f.width > 0) || (f.ext === 'mp4' && f.vcodec !== 'none'));
+            if (entryVideoFormats.length > 0) {
+              const bestFormat = entryVideoFormats.reduce((prev: any, current: any) => ((prev.height || 0) > (current.height || 0)) ? prev : current, entryVideoFormats[0]);
+              videoUrl = bestFormat.url || videoUrl;
+            }
           }
           carouselVideos.push({
             title: entry.title || `Vidéo ${carouselVideos.length + 1}`,
@@ -100,8 +103,21 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
             ext: entry.ext || 'mp4'
           });
         } else {
-          const imgUrl = entry.url || entry.thumbnail;
-          if (imgUrl) {
+          // C'est une image
+          let imgUrl = '';
+          if (entry.thumbnails && entry.thumbnails.length > 0) {
+            const bestThumb = entry.thumbnails.reduce((prev: any, current: any) => ((prev.height || 0) > (current.height || 0)) ? prev : current);
+            if (bestThumb && bestThumb.url) imgUrl = bestThumb.url;
+          }
+          if (!imgUrl && entry.formats && entry.formats.length > 0) {
+            const imgFormat = entry.formats.find((f: any) => f.ext === 'jpg' || f.ext === 'png' || f.ext === 'webp');
+            if (imgFormat) imgUrl = imgFormat.url;
+          }
+          if (!imgUrl) {
+            imgUrl = entry.url || entry.thumbnail;
+          }
+          
+          if (imgUrl && !imgUrl.includes('instagram.com/p/') && !imgUrl.includes('instagram.com/reel/')) {
             carouselImages.push(imgUrl);
           }
         }

@@ -126,19 +126,39 @@ const worker = new Worker(
       }
 
       if (output.entries && Array.isArray(output.entries)) {
-        videoData.entries = output.entries.map((entry: any) => ({
-          id: entry.id,
-          title: entry.title || entry.description || '',
-          url: entry.url || entry.webpage_url || entry.original_url || '',
-          description: entry.description || '',
-          view_count: entry.view_count || 0,
-          like_count: entry.like_count || 0,
-          comment_count: entry.comment_count || 0,
-          duration: entry.duration_string || (entry.duration ? `${entry.duration}s` : ''),
-          uploader: entry.uploader || entry.uploader_id || '',
-          upload_date: entry.upload_date || '',
-          thumbnail: entry.thumbnail || ''
-        }));
+        videoData.entries = output.entries.map((entry: any) => {
+          let entryFormats = [];
+          if (entry.formats) {
+            entryFormats = entry.formats.filter((f: any) => f.url && !f.url.includes('.m3u8')).map((f: any) => ({
+              format_id: f.format_id,
+              ext: f.ext,
+              resolution: f.resolution,
+              height: f.height || null,
+              width: f.width || null,
+              filesize: f.filesize || null,
+              vcodec: f.vcodec,
+              acodec: f.acodec,
+              url: f.url
+            })).slice(-40);
+          }
+          return {
+            id: entry.id,
+            title: entry.title || entry.description || '',
+            url: entry.url || entry.webpage_url || entry.original_url || '',
+            description: entry.description || '',
+            view_count: entry.view_count || 0,
+            like_count: entry.like_count || 0,
+            comment_count: entry.comment_count || 0,
+            duration: entry.duration_string || (entry.duration ? `${entry.duration}s` : ''),
+            uploader: entry.uploader || entry.uploader_id || '',
+            upload_date: entry.upload_date || '',
+            thumbnail: entry.thumbnail || '',
+            thumbnails: entry.thumbnails || [],
+            formats: entryFormats,
+            ext: entry.ext || '',
+            vcodec: entry.vcodec
+          };
+        });
       }
 
       // Traitement du résumé via IA

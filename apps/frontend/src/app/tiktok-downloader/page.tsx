@@ -46,70 +46,128 @@ export default async function TikTokDownloader() {
 
         <DownloaderForm platform="tiktok" />
 
-        <div className="text-left mt-24 mb-12 max-w-4xl mx-auto glass-card p-8 rounded-3xl space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-6">
-              <h2 className="text-3xl font-extrabold text-white">Comment télécharger une vidéo TikTok sans filigrane ?</h2>
-              <ol className="space-y-6 text-slate-300">
-                <li className="flex gap-4">
-                  <div className="bg-pink-500/20 text-pink-400 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">1</div>
-                  <div>
-                    <strong className="text-white block mb-1">Copiez le lien TikTok</strong>
-                    Ouvrez l'application TikTok, choisissez la vidéo, appuyez sur "Partager" puis "Copier le lien".
-                  </div>
-                </li>
-                <li className="flex gap-4">
-                  <div className="bg-pink-500/20 text-pink-400 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">2</div>
-                  <div>
-                    <strong className="text-white block mb-1">Collez le lien</strong>
-                    Revenez sur cette page et collez le lien dans le champ de texte ci-dessus.
-                  </div>
-                </li>
-                <li className="flex gap-4">
-                  <div className="bg-pink-500/20 text-pink-400 font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0">3</div>
-                  <div>
-                    <strong className="text-white block mb-1">Téléchargez</strong>
-                    Cliquez sur le bouton Télécharger et choisissez votre format (Vidéo MP4 ou Musique MP3).
-                  </div>
-                </li>
-              </ol>
-            </div>
-            
-            <div className="relative rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
-              <img 
-                src="https://images.unsplash.com/photo-1611605698335-8b15d27e03f9?w=600&auto=format&fit=crop&q=60" 
-                alt="TikTok Downloader Illustration" 
-                className="w-full h-72 object-cover hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent flex items-end p-4">
-                <span className="text-xs font-semibold bg-pink-500 text-white px-2.5 py-1 rounded-md shadow-lg">HD & No Watermark</span>
-              </div>
-            </div>
+        {/* SEO & FAQ Section inspirée de SnapTik */}
+        <div className="text-left mt-24 mb-12 max-w-4xl mx-auto glass-card p-6 md:p-10 rounded-3xl space-y-12">
+          
+          <div className="space-y-6 text-slate-300 leading-relaxed">
+            <h2 className="text-3xl font-extrabold text-white">Télécharger vidéo TikTok sans filigrane GRATUITEMENT</h2>
+            <p>
+              Notre plateforme est l'un des meilleurs téléchargeurs TikTok disponibles en ligne pour télécharger des vidéos TikTok sans filigrane (watermark). Vous n'avez pas besoin d'installer de logiciel sur votre ordinateur ou votre téléphone mobile. Tout ce dont vous avez besoin est un lien vidéo TikTok, et tout le traitement est effectué sur nos serveurs ultra-rapides. Vous êtes à un clic du téléchargement de vos vidéos préférées sur vos appareils.
+            </p>
+
+            <h3 className="text-2xl font-bold text-white mt-8 mb-4">Principales caractéristiques :</h3>
+            <ul className="space-y-4">
+              <li className="flex gap-3">
+                <CheckCircle className="w-6 h-6 text-pink-400 shrink-0" />
+                <span><strong>Pas de filigrane :</strong> Profitez d'une meilleure qualité de visionnage, ce que la plupart des outils concurrents ne peuvent pas faire.</span>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="w-6 h-6 text-pink-400 shrink-0" />
+                <span><strong>Tous vos appareils :</strong> Téléchargez des vidéos TikTok sur le support que vous souhaitez : mobile, PC ou tablette. TikTok permet uniquement de télécharger des vidéos via son application, et ces vidéos contiennent un filigrane gênant.</span>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="w-6 h-6 text-pink-400 shrink-0" />
+                <span><strong>Directement via navigateur :</strong> Nous voulons que les choses soient simples pour vous. Pas besoin de télécharger ou d'installer de logiciels ni d'extensions suspectes.</span>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="w-6 h-6 text-pink-400 shrink-0" />
+                <span><strong>100% Gratuit :</strong> C'est toujours gratuit. Nous plaçons seulement quelques publicités discrètes qui soutiennent le maintien de nos services.</span>
+              </li>
+              <li className="flex gap-3">
+                <CheckCircle className="w-6 h-6 text-pink-400 shrink-0" />
+                <span><strong>Prise en charge des Carrousels (Photos) :</strong> Notre outil offre la possibilité de télécharger les diaporamas photos TikTok. Vous pouvez télécharger chaque image individuellement en haute définition.</span>
+              </li>
+            </ul>
           </div>
 
           <hr className="border-slate-800" />
 
-          <div>
-            <h3 className="text-xl font-bold mb-4 text-white">Pourquoi choisir notre téléchargeur TikTok ?</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-300 text-sm">
-              <div className="flex gap-2">
-                <CheckCircle className="w-5 h-5 text-pink-400 shrink-0" />
-                <span><strong>Sans logo TikTok :</strong> Les vidéos sont extraites dans leur version brute, sans aucun filigrane gênant.</span>
-              </div>
-              <div className="flex gap-2">
-                <CheckCircle className="w-5 h-5 text-pink-400 shrink-0" />
-                <span><strong>Qualité originale HD :</strong> Conserve la résolution originale (1080p) pour une netteté absolue.</span>
-              </div>
-              <div className="flex gap-2">
-                <CheckCircle className="w-5 h-5 text-pink-400 shrink-0" />
-                <span><strong>Extraction audio MP3 :</strong> Permet d'extraire la musique ou le son de fond de n'importe quel TikTok en MP3.</span>
-              </div>
-              <div className="flex gap-2">
-                <CheckCircle className="w-5 h-5 text-pink-400 shrink-0" />
-                <span><strong>Aucune limite :</strong> Téléchargez autant de vidéos que vous le souhaitez, entièrement gratuitement.</span>
-              </div>
+          {/* Foire Aux Questions (FAQ) Accordion */}
+          <div className="space-y-6">
+            <h2 className="text-3xl font-extrabold text-white mb-8">Foire Aux Questions (FAQ)</h2>
+            
+            <div className="space-y-4">
+              <details className="group bg-slate-900/50 rounded-2xl border border-slate-800 open:bg-slate-900/80 transition-all">
+                <summary className="flex cursor-pointer items-center justify-between p-5 font-semibold text-white">
+                  Comment obtenir le lien de téléchargement vidéo TikTok ?
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="px-5 pb-5 text-slate-400 leading-relaxed">
+                  Ouvrez l'application TikTok sur votre téléphone ou le site web sur votre ordinateur. Choisissez la vidéo que vous souhaitez télécharger. Appuyez sur le bouton Partager (la flèche) en bas à droite. Cliquez sur "Copier le lien".
+                </div>
+              </details>
+
+              <details className="group bg-slate-900/50 rounded-2xl border border-slate-800 open:bg-slate-900/80 transition-all">
+                <summary className="flex cursor-pointer items-center justify-between p-5 font-semibold text-white">
+                  Où sont enregistrées les vidéos TikTok après leur téléchargement ?
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="px-5 pb-5 text-slate-400 leading-relaxed">
+                  Par défaut, les vidéos sont enregistrées dans le dossier "Téléchargements" de votre navigateur web, que ce soit sur un ordinateur (Windows/Mac) ou sur votre smartphone (Android/iOS).
+                </div>
+              </details>
+
+              <details className="group bg-slate-900/50 rounded-2xl border border-slate-800 open:bg-slate-900/80 transition-all">
+                <summary className="flex cursor-pointer items-center justify-between p-5 font-semibold text-white">
+                  Conservez-vous une copie des vidéos téléchargées ?
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="px-5 pb-5 text-slate-400 leading-relaxed">
+                  Non, nous ne stockons aucune vidéo et nous ne conservons aucune copie des vidéos téléchargées. Toutes les vidéos sont directement issues des serveurs originaux de TikTok (CDN). De plus, nous ne suivons pas l'historique de téléchargement de nos utilisateurs.
+                </div>
+              </details>
+
+              <details className="group bg-slate-900/50 rounded-2xl border border-slate-800 open:bg-slate-900/80 transition-all">
+                <summary className="flex cursor-pointer items-center justify-between p-5 font-semibold text-white">
+                  Dois-je payer pour télécharger des vidéos TikTok ?
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="px-5 pb-5 text-slate-400 leading-relaxed">
+                  Non ! Notre outil est 100% gratuit à vie. Vous n'avez pas besoin de payer le moindre centime.
+                </div>
+              </details>
+
+              <details className="group bg-slate-900/50 rounded-2xl border border-slate-800 open:bg-slate-900/80 transition-all">
+                <summary className="flex cursor-pointer items-center justify-between p-5 font-semibold text-white">
+                  Comment télécharger sur iPhone (iOS) ?
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="px-5 pb-5 text-slate-400 leading-relaxed">
+                  Grâce à la politique d'Apple, vous pouvez désormais utiliser notre site Web directement depuis le navigateur Safari de votre iPhone (sous iOS 13 ou supérieur). Copiez le lien de la vidéo TikTok, collez-le ici et cliquez sur Télécharger. La vidéo sera sauvegardée dans vos fichiers ou votre pellicule.
+                </div>
+              </details>
+
+              <details className="group bg-slate-900/50 rounded-2xl border border-slate-800 open:bg-slate-900/80 transition-all">
+                <summary className="flex cursor-pointer items-center justify-between p-5 font-semibold text-white">
+                  Fournissez-vous une solution de téléchargement TikTok MP3 ?
+                  <span className="transition group-open:rotate-180">
+                    <svg fill="none" height="24" shapeRendering="geometricPrecision" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                  </span>
+                </summary>
+                <div className="px-5 pb-5 text-slate-400 leading-relaxed">
+                  Absolument ! Lors du téléchargement de n'importe quelle vidéo, notre système extrait automatiquement l'audio d'origine et vous propose un bouton pour télécharger le format MP3 (Musique) en haute qualité.
+                </div>
+              </details>
             </div>
           </div>
+
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 mt-8">
+            <h4 className="font-bold text-amber-500 mb-2">Remarque importante :</h4>
+            <p className="text-sm text-slate-400">
+              Notre outil n'est pas affilié à TikTok, ByteDance Ltd, ni aucun autre réseau social. Nous aidons uniquement les utilisateurs à télécharger du contenu public sans filigrane à des fins personnelles. Si vous rencontrez des problèmes avec d'autres sites web, essayez le nôtre, nous mettons constamment à jour nos serveurs pour permettre une extraction fluide. Merci !
+            </p>
+          </div>
+
         </div>
       </div>
     </main>
