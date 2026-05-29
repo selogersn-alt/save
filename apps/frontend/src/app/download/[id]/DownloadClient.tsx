@@ -46,9 +46,9 @@ export default function DownloadResult({ id, adBannerHtml }: DownloadResultProps
   }, [id]);
 
   // Tri intelligent des formats
-  let hdFormat = null;
-  let sdFormat = null;
-  let audioFormat = null;
+  let hdFormat: any = null;
+  let sdFormat: any = null;
+  let audioFormat: any = null;
 
   if (result) {
     const formats = result.formats || [];

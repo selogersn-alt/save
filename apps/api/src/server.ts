@@ -6,6 +6,10 @@ import { z } from 'zod';
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod';
 import { getDb, extractions, posts, settings } from '@telechargeur/database';
 import { eq } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
+import * as jose from 'jose';
+
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key-for-admin-panel');
 
 const app = fastify({ logger: true }).withTypeProvider<ZodTypeProvider>();
 
@@ -21,6 +25,68 @@ const redisConnection = new Redis({ host: REDIS_HOST, port: REDIS_PORT, maxRetri
 const extractionQueue = new Queue('extraction', { connection: redisConnection as any });
 
 const db = getDb(process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/telechargeur');
+
+// --- ROUTES AUTH (ADMIN) ---
+app.post('/api/auth/setup', {
+  schema: { body: z.object({ password: z.string().min(6) }) }
+}, async (request, reply) => {
+  const { password } = request.body;
+  
+  const existing = await db.select().from(settings).where(eq(settings.key, 'admin_pwd'));
+  if (existing.length > 0) {
+    return reply.status(403).send({ error: 'Admin account already setup.' });
+  }
+
+  const hash = await bcrypt.hash(password, 10);
+  await db.insert(settings).values({ key: 'admin_pwd', value: hash });
+  
+  const token = await new jose.SignJWT({ role: 'admin' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('24h')
+    .sign(JWT_SECRET);
+    
+  return { token };
+});
+
+app.post('/api/auth/login', {
+  schema: { body: z.object({ password: z.string() }) }
+}, async (request, reply) => {
+  const { password } = request.body;
+  
+  const existing = await db.select().from(settings).where(eq(settings.key, 'admin_pwd'));
+  if (existing.length === 0) {
+    return reply.status(404).send({ error: 'No admin account found. Please setup first.' });
+  }
+
+  const hash = existing[0].value;
+  const isValid = await bcrypt.compare(password, hash);
+  
+  if (!isValid) {
+    return reply.status(401).send({ error: 'Invalid password' });
+  }
+
+  const token = await new jose.SignJWT({ role: 'admin' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('24h')
+    .sign(JWT_SECRET);
+    
+  return { token };
+});
+
+app.get('/api/auth/verify', async (request, reply) => {
+  const authHeader = request.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return reply.status(401).send({ error: 'Missing token' });
+  }
+  
+  const token = authHeader.split(' ')[1];
+  try {
+    await jose.jwtVerify(token, JWT_SECRET);
+    return { valid: true };
+  } catch (err) {
+    return reply.status(401).send({ error: 'Invalid token' });
+  }
+});
 
 app.post(
   '/api/extract',
