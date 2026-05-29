@@ -153,7 +153,7 @@ app.get(
   {
     schema: {
       querystring: z.object({
-        url: z.string().url(),
+        url: z.string(),
         filename: z.string().optional()
       })
     }
@@ -178,9 +178,7 @@ app.get(
           'Accept': '*/*',
           'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
           'Referer': referer,
-          'Range': 'bytes=0-',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Connection': 'keep-alive'
         }
       });
       
