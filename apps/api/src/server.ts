@@ -163,11 +163,22 @@ app.get(
     try {
       request.log.info(`Proxying download from: ${url}`);
       
+      let referer = 'https://www.tiktok.com/';
+      if (url.includes('instagram.com')) {
+        referer = 'https://www.instagram.com/';
+      } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        referer = 'https://www.youtube.com/';
+      } else if (url.includes('facebook.com')) {
+        referer = 'https://www.facebook.com/';
+      }
+
       const res = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent': (request.headers['user-agent'] as string) || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': '*/*',
-          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Referer': referer,
+          'Range': 'bytes=0-',
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         }
