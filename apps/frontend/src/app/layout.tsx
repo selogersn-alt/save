@@ -42,6 +42,7 @@ export const metadata: Metadata = {
 };
 
 import Footer from "@/components/Footer";
+import Navbar from "@/components/Navbar";
 import AdManager from "@/components/AdManager";
 
 export default function RootLayout({
@@ -51,8 +52,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="dark">
-      <body className={`${inter.className} min-h-screen bg-slate-950 text-slate-50 selection:bg-purple-500/30 flex flex-col`}>
+      <body className={`${inter.className} min-h-screen bg-slate-950 text-slate-50 selection:bg-purple-500/30 flex flex-col pt-16`}>
         <AdManager />
+        <Navbar />
         <main className="flex-grow">
           {children}
         </main>

@@ -8,12 +8,27 @@ export const metadata: Metadata = {
   keywords: ["tiktok downloader", "télécharger tiktok sans filigrane", "tiktok mp4", "tiktok mp3", "télécharger video tiktok gratuit"],
 };
 
-export default function TikTokDownloader() {
+async function getSettings() {
+  try {
+    const res = await fetch(`${process.env.API_URL || 'http://api:3001'}/api/settings`, { cache: 'no-store' });
+    if (!res.ok) return {};
+    return res.json();
+  } catch { return {}; }
+}
+
+export default async function TikTokDownloader() {
+  const settings = await getSettings();
+
   return (
-    <main className="relative min-h-screen overflow-hidden flex flex-col items-center pt-20 px-4">
+    <main className="relative min-h-screen overflow-hidden flex flex-col items-center pt-10 px-4">
       {/* Background Effects */}
       <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-pink-600/20 blur-[120px] mix-blend-screen animate-float"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-blue-600/20 blur-[120px] mix-blend-screen animate-float" style={{ animationDelay: "2s" }}></div>
+
+      {/* Banner Ad from Admin Settings */}
+      {settings.ad_banner_html && (
+        <div className="w-full max-w-4xl mx-auto mb-8 flex justify-center z-20" dangerouslySetInnerHTML={{ __html: settings.ad_banner_html }} />
+      )}
 
       <div className="z-10 w-full max-w-4xl text-center space-y-8 flex-1">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card text-sm font-medium text-pink-300 mb-4">

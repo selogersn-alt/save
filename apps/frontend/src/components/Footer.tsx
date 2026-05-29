@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, Video, Music, Info, Shield, FileText } from "lucide-react";
+import { Download, Video, Music, Info, Shield, FileText, Facebook } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -17,7 +17,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-slate-400 text-sm">
-              L'outil ultime pour télécharger vos vidéos préférées depuis TikTok, YouTube et Instagram. Gratuit, rapide, et sans filigrane.
+              L'outil ultime pour télécharger vos vidéos préférées depuis TikTok, YouTube, Instagram et Facebook. Gratuit, rapide, et sans filigrane.
             </p>
           </div>
 
@@ -39,12 +39,22 @@ export default function Footer() {
                   <Video className="w-4 h-4" /> Instagram Downloader
                 </Link>
               </li>
+              <li>
+                <Link href="/facebook-downloader" className="hover:text-purple-400 transition-colors flex items-center gap-2">
+                  <Facebook className="w-4 h-4" /> Facebook Downloader
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4">Légal</h3>
+            <h3 className="text-white font-semibold mb-4">Informations</h3>
             <ul className="space-y-2 text-sm text-slate-400">
+              <li>
+                <Link href="/blog" className="hover:text-purple-400 transition-colors flex items-center gap-2">
+                  <FileText className="w-4 h-4" /> Guides & Ressources
+                </Link>
+              </li>
               <li>
                 <Link href="#" className="hover:text-purple-400 transition-colors flex items-center gap-2">
                   <FileText className="w-4 h-4" /> Conditions d'utilisation
@@ -66,7 +76,7 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-semibold mb-4">Avertissement</h3>
             <p className="text-slate-500 text-xs">
-              Save.digitalh.net n'est pas affilié à TikTok, YouTube, Instagram, ou toute autre entreprise. Nous n'hébergeons aucun fichier sur nos serveurs. L'utilisateur est seul responsable des contenus téléchargés.
+              Save.digitalh.net n'est pas affilié à TikTok, YouTube, Instagram, Facebook, ou toute autre entreprise. Nous n'hébergeons aucun fichier sur nos serveurs. L'utilisateur est seul responsable des contenus téléchargés.
             </p>
           </div>
 
