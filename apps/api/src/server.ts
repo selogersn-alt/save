@@ -174,6 +174,9 @@ app.get(
       // Cela évite les erreurs 403 Forbidden sur YouTube (googlevideo.com) et TikTok.
       const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
       
+      let referer: string | undefined = undefined;
+      const lowerUrl = url.toLowerCase();
+      
       if (lowerUrl.includes('tiktok') || lowerUrl.includes('byteoversea') || lowerUrl.includes('ibyteimg')) {
         referer = 'https://www.tiktok.com/';
       } else if (lowerUrl.includes('instagram') || lowerUrl.includes('cdninstagram')) {
